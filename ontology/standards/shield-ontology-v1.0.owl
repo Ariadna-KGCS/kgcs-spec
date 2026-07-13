@@ -1,0 +1,254 @@
+@prefix shield: <http://www.motherhacker.me/kgcs/ontology/shield#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+shield:ShieldOntology a owl:Ontology ;
+    rdfs:label "SHIELD Ontology v1.0" ;
+    rdfs:comment "MITRE SHIELD active defense framework defining defensive tactics, techniques, opportunities, use cases, and procedures for protection against adversary operations. Hierarchical tactic-technique-opportunity-usecase federation with critical Opportunity→UseCase cardinality constraint (minimum 1) and explicit ATT&CK defensive-offensive alignment (5 relationship types: detects, mitigates, enables, tests, engages_with)." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+shield:DefensiveTactic a owl:Class ;
+    rdfs:label "SHIELD Defensive Tactic" ;
+    rdfs:comment "High-level defensive tactic that organizes related techniques. SHIELD defines 8 core tactics (Channel, Collect, Contain, Detect, Disrupt, Facilitate, Legitimize, Test) implementing diverse strategic defensive approaches." ;
+    rdfs:subClassOf kgcs:DefensiveTechnique .
+
+shield:DefensiveTechnique a owl:Class ;
+    rdfs:label "SHIELD Defensive Technique" ;
+    rdfs:comment "Tactical defensive technique implementing specific defensive actions or capabilities. Examples: Admin Access, Decoy Account, Network Monitoring, User Training, Behavioral Analysis." ;
+    rdfs:subClassOf kgcs:DefensiveTechnique .
+
+shield:Opportunity a owl:Class ;
+    rdfs:label "SHIELD Opportunity" ;
+    rdfs:comment "Strategic defensive opportunity for applying techniques against adversary behavior. Represents specific contexts or scenarios where defensive approaches apply. Range: 100+ instances (DOS0001-DOS0253+). CRITICAL: Must have ≥1 associated use cases." ;
+    rdfs:subClassOf kgcs:EngagementConcept .
+
+shield:UseCase a owl:Class ;
+    rdfs:label "SHIELD Use Case" ;
+    rdfs:comment "Practical implementation scenario demonstrating how to apply techniques within opportunities. Provides concrete, tactical examples for defenders. Range: 260+ instances (DUC0001-DUC0261+)." ;
+    rdfs:subClassOf kgcs:EngagementConcept .
+
+shield:Procedure a owl:Class ;
+    rdfs:label "SHIELD Procedure" ;
+    rdfs:comment "Concrete technical procedure or implementation step. Defines executable technical steps, code, or implementation details supporting use cases. Range: 66 instances (DPR0001-DPR0066+)." ;
+    rdfs:subClassOf kgcs:EngagementConcept .
+
+shield:AttackMapping a owl:Class ;
+    rdfs:label "SHIELD to ATT&CK Mapping" ;
+    rdfs:comment "Cross-reference entity linking SHIELD defensive entities to MITRE ATT&CK offensive techniques and tactics. Enables defensive-offensive alignment through 5 relationship types: detects, mitigates, enables, tests, engages_with. Supports bidirectional coverage analysis." .
+
+#################################################################
+# Disjointness Constraints
+#################################################################
+
+shield:DefensiveTactic owl:disjointWith shield:Opportunity .
+shield:DefensiveTactic owl:disjointWith shield:UseCase .
+shield:DefensiveTactic owl:disjointWith shield:Procedure .
+shield:DefensiveTechnique owl:disjointWith shield:Opportunity .
+shield:DefensiveTechnique owl:disjointWith shield:UseCase .
+shield:DefensiveTechnique owl:disjointWith shield:Procedure .
+shield:Opportunity owl:disjointWith shield:UseCase .
+
+#################################################################
+# Object Properties (Relationships)
+#################################################################
+
+shield:contains_technique a owl:ObjectProperty ;
+    rdfs:label "contains technique" ;
+    rdfs:comment "This tactic organizes and contains these techniques. Each tactic connects to 15-22 techniques. Minimum 1 required per tactic." ;
+    rdfs:domain shield:DefensiveTactic ;
+    rdfs:range shield:DefensiveTechnique ;
+    owl:inverseOf shield:belongs_to_tactic .
+
+shield:belongs_to_tactic a owl:ObjectProperty ;
+    rdfs:label "belongs to tactic" ;
+    rdfs:comment "This technique belongs to these tactics. Back-reference for querying defensive tactic membership. Inverse of contains_technique." ;
+    rdfs:domain shield:DefensiveTechnique ;
+    rdfs:range shield:DefensiveTactic .
+
+shield:enables_opportunity a owl:ObjectProperty ;
+    rdfs:label "enables opportunity" ;
+    rdfs:comment "This technique may support these opportunities. Optional relationship for strategic flexibility (0 or more). Enables technique-to-opportunity navigation." ;
+    rdfs:domain shield:DefensiveTechnique ;
+    rdfs:range shield:Opportunity ;
+    owl:inverseOf shield:supported_by_technique .
+
+shield:supported_by_technique a owl:ObjectProperty ;
+    rdfs:label "supported by technique" ;
+    rdfs:comment "This opportunity is supported by these techniques. Back-reference for querying technique support. Inverse of enables_opportunity." ;
+    rdfs:domain shield:Opportunity ;
+    rdfs:range shield:DefensiveTechnique .
+
+shield:has_usecase a owl:ObjectProperty ;
+    rdfs:label "has use case" ;
+    rdfs:comment "This opportunity has these use cases. CRITICAL: Minimum 1 required per opportunity to ensure every strategic opportunity has concrete implementation scenarios. Cardinality: 1+. Enforces semantic integrity of defensive posture." ;
+    rdfs:domain shield:Opportunity ;
+    rdfs:range shield:UseCase ;
+    owl:inverseOf shield:realizes_opportunity .
+
+shield:realizes_opportunity a owl:ObjectProperty ;
+    rdfs:label "realizes opportunity" ;
+    rdfs:comment "This use case realizes this opportunity. Back-reference for querying opportunity implementation. Inverse of has_usecase. CRITICAL relationship enforces minimum 1 cardinality." ;
+    rdfs:domain shield:UseCase ;
+    rdfs:range shield:Opportunity .
+
+shield:implements_procedure a owl:ObjectProperty ;
+    rdfs:label "implements procedure" ;
+    rdfs:comment "This use case implements these procedures. Optional relationship (0 or more) - procedures are implementation details, often implicit or applied incrementally." ;
+    rdfs:domain shield:UseCase ;
+    rdfs:range shield:Procedure ;
+    owl:inverseOf shield:used_by_usecase .
+
+shield:used_by_usecase a owl:ObjectProperty ;
+    rdfs:label "used by use case" ;
+    rdfs:comment "This procedure is used by these use cases. Back-reference for querying procedure usage. Multiple use cases can reference the same procedure. Inverse of implements_procedure." ;
+    rdfs:domain shield:Procedure ;
+    rdfs:range shield:UseCase .
+
+shield:maps_to_attack a owl:ObjectProperty ;
+    rdfs:label "maps to ATT&CK" ;
+    rdfs:comment "This SHIELD entity maps to this ATT&CK technique in defensive-offensive alignment. Enables bidirectional coverage analysis and threat modeling workflows." ;
+    rdfs:domain [ owl:unionOf (shield:DefensiveTactic shield:DefensiveTechnique shield:Opportunity shield:UseCase shield:Procedure) ] ;
+    rdfs:range attack:Technique ;
+    owl:inverseOf shield:aligned_by_defense .
+
+shield:aligned_by_defense a owl:ObjectProperty ;
+    rdfs:label "aligned by defense" ;
+    rdfs:comment "This ATT&CK technique is aligned with these SHIELD defensive entities. Inverse of maps_to_attack. Enables offensive→defensive queries." ;
+    rdfs:domain attack:Technique ;
+    rdfs:range [ owl:unionOf (shield:DefensiveTactic shield:DefensiveTechnique shield:Opportunity shield:UseCase shield:Procedure) ] .
+
+#################################################################
+# Datatype Properties (Metadata & Identifiers)
+#################################################################
+
+shield:tacticId a owl:DatatypeProperty ;
+    rdfs:label "tactic ID" ;
+    rdfs:comment "Unique SHIELD tactic identifier in format DTA#### (e.g., DTA0001-DTA0008). Fixed 8 values, never exceeds 8. Global unique constraint enforced." ;
+    rdfs:domain shield:DefensiveTactic ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:techniqueId a owl:DatatypeProperty ;
+    rdfs:label "technique ID" ;
+    rdfs:comment "Unique SHIELD technique identifier in format DTE#### (e.g., DTE0001+). Extensible with gaps allowed for deprecation. Global unique constraint enforced." ;
+    rdfs:domain shield:DefensiveTechnique ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:opportunityId a owl:DatatypeProperty ;
+    rdfs:label "opportunity ID" ;
+    rdfs:comment "Unique SHIELD opportunity identifier in format DOS#### (e.g., DOS0001+). Extensible with sparse numbering allowed. Global unique constraint enforced." ;
+    rdfs:domain shield:Opportunity ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:useCaseId a owl:DatatypeProperty ;
+    rdfs:label "use case ID" ;
+    rdfs:comment "Unique SHIELD use case identifier in format DUC#### (e.g., DUC0001+). Extensible with sparse numbering allowed. Global unique constraint enforced." ;
+    rdfs:domain shield:UseCase ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:procedureId a owl:DatatypeProperty ;
+    rdfs:label "procedure ID" ;
+    rdfs:comment "Unique SHIELD procedure identifier in format DPR#### (e.g., DPR0001+). Extensible with versioning allowed. Global unique constraint enforced." ;
+    rdfs:domain shield:Procedure ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:longDescription a owl:DatatypeProperty ;
+    rdfs:label "long description" ;
+    rdfs:comment "Detailed description with strategic context, implementation guidance, and rationale for tactics or techniques." ;
+    rdfs:domain [ owl:unionOf (shield:DefensiveTactic shield:DefensiveTechnique) ] ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:shieldEntityType a owl:DatatypeProperty ;
+    rdfs:label "SHIELD entity type" ;
+    rdfs:comment "Classification of SHIELD entity type in mapping: tactic, technique, opportunity, usecase, or procedure. Enum constraint for type discrimination in mappings." ;
+    rdfs:domain shield:AttackMapping ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:relationshipType a owl:DatatypeProperty ;
+    rdfs:label "relationship type" ;
+    rdfs:comment "Type of defensive-offensive relationship in ATT&CK mapping. Enum: detects (monitoring identifies behavior), mitigates (reduces impact), enables (controlled execution), tests (capability probing), engages_with (active deception)." ;
+    rdfs:domain shield:AttackMapping ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+shield:defensiveCoverage a owl:DatatypeProperty ;
+    rdfs:label "defensive coverage" ;
+    rdfs:comment "Coverage level indicating effectiveness span of defensive capability against ATT&CK technique. Enum: Low, Moderate, High. Optional metadata on mappings." ;
+    rdfs:domain shield:AttackMapping ;
+    rdfs:range xsd:string .
+
+#################################################################
+# Cardinality Constraints
+#################################################################
+
+# Tactic must contain at least 1 technique
+[] a owl:Class ;
+    owl:onClass shield:DefensiveTactic ;
+    owl:allValuesFrom [ a owl:Restriction ;
+        owl:onProperty shield:contains_technique ;
+        owl:minCardinality 1 ] .
+
+# Opportunity must have at least 1 use case (CRITICAL SEMANTIC RULE)
+[] a owl:Class ;
+    owl:onClass shield:Opportunity ;
+    owl:allValuesFrom [ a owl:Restriction ;
+        owl:onProperty shield:has_usecase ;
+        owl:minCardinality 1 ] .
+
+#################################################################
+# Key Instances / Examples (Optional - for documentation)
+#################################################################
+
+# Example instances help document the ontology structure
+
+shield:DTA0001 a shield:DefensiveTactic ;
+    rdfs:label "Channel" ;
+    rdfs:comment "Guide an adversary down a specific path to achieve defensive objectives." ;
+    shield:tacticId "DTA0001" .
+
+shield:DTE0001 a shield:DefensiveTechnique ;
+    rdfs:label "Decoy Account" ;
+    rdfs:comment "Create fake user accounts as deceptive bait." ;
+    shield:techniqueId "DTE0001" ;
+    shield:belongs_to_tactic shield:DTA0001 .
+
+shield:DOS0027 a shield:Opportunity ;
+    rdfs:label "Detection Opportunity" ;
+    rdfs:comment "Create detection with moderately high probability." ;
+    shield:opportunityId "DOS0027" ;
+    shield:supported_by_technique shield:DTE0001 .
+
+shield:DUC0040 a shield:UseCase ;
+    rdfs:label "Decoy System Access" ;
+    rdfs:comment "Defender can use decoy system to access compromised website." ;
+    shield:useCaseId "DUC0040" ;
+    shield:realizes_opportunity shield:DOS0027 .
+
+shield:DPR0001 a shield:Procedure ;
+    rdfs:label "Admin Access Removal" ;
+    rdfs:comment "Remove admin access to reveal privilege escalation techniques." ;
+    shield:procedureId "DPR0001" ;
+    shield:used_by_usecase shield:DUC0040 .
+
+#################################################################
+# End of SHIELD Ontology
+#################################################################

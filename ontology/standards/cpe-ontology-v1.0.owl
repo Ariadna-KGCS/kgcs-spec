@@ -1,0 +1,139 @@
+@prefix cpe: <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+cpe:CPEOntology a owl:Ontology ;
+    rdfs:label "KGCS CPE Ontology v1.0" ;
+    rdfs:comment "CPE/NVD platform and platform-configuration key fields for standards-aligned modeling." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Object Properties
+#################################################################
+
+cpe:matchesPlatform a owl:ObjectProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range kgcs:Platform ;
+    rdfs:label "matches platform" ;
+    rdfs:comment "Structural relation materialized from CPE Match API expansion (matchCriteriaId -> matches -> cpeNameId)." ;
+    owl:inverseOf cpe:isMatchedByConfiguration .
+
+cpe:isMatchedByConfiguration a owl:ObjectProperty ;
+    rdfs:domain kgcs:Platform ;
+    rdfs:range kgcs:PlatformConfiguration ;
+    rdfs:label "is matched by configuration" ;
+    rdfs:comment "Inverse of cpe:matchesPlatform for structural CPE matching projection." ;
+    owl:inverseOf cpe:matchesPlatform .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+cpe:cpeUri a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Platform , kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "cpe uri" ;
+    rdfs:comment "Canonical CPE URI from NVD/CPE for platform identity and configuration linkage." .
+
+cpe:cpeNameId a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Platform ;
+    rdfs:range xsd:string ;
+    rdfs:label "cpe name id" ;
+    rdfs:comment "NVD CPE name identifier for Platform nodes." .
+
+cpe:part a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Platform ;
+    rdfs:range xsd:string ;
+    rdfs:label "part" ;
+    rdfs:comment "CPE part value: application (a), operating system (o), or hardware (h)." .
+
+cpe:vendor a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Platform ;
+    rdfs:range xsd:string ;
+    rdfs:label "vendor" ;
+    rdfs:comment "Vendor component from canonical CPE naming attributes." .
+
+cpe:product a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Platform ;
+    rdfs:range xsd:string ;
+    rdfs:label "product" ;
+    rdfs:comment "Product component from canonical CPE naming attributes." .
+
+cpe:version a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Platform ;
+    rdfs:range xsd:string ;
+    rdfs:label "version" ;
+    rdfs:comment "Version component from canonical CPE naming attributes." .
+
+cpe:matchCriteriaId a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "match criteria id" ;
+    rdfs:comment "NVD match criteria identifier for PlatformConfiguration expressions." .
+
+cpe:criteria a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "criteria" ;
+    rdfs:comment "Raw CPE criteria expression from NVD CVE/CPE Match records." .
+
+cpe:vulnerable a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "vulnerable" ;
+    rdfs:comment "Boolean applicability flag from NVD CVE configurations.cpeMatch entries." .
+
+cpe:versionStartIncluding a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "version start including" ;
+    rdfs:comment "Inclusive lower bound of affected version range from NVD CPE match criteria." .
+
+cpe:versionStartExcluding a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "version start excluding" ;
+    rdfs:comment "Exclusive lower bound of affected version range from NVD CPE match criteria." .
+
+cpe:versionEndIncluding a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "version end including" ;
+    rdfs:comment "Inclusive upper bound of affected version range from NVD CPE match criteria." .
+
+cpe:versionEndExcluding a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "version end excluding" ;
+    rdfs:comment "Exclusive upper bound of affected version range from NVD CPE match criteria." .
+
+cpe:created a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "created" ;
+    rdfs:comment "Creation timestamp of match criteria in NVD CPE Match feed." .
+
+cpe:lastModified a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "last modified" ;
+    rdfs:comment "Last-modified timestamp of match criteria in NVD CPE Match feed." .
+
+cpe:cpeLastModified a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "cpe last modified" ;
+    rdfs:comment "Most recent CPE dictionary update timestamp associated with this match criteria entry." .
+
+cpe:configStatus a owl:DatatypeProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range xsd:string ;
+    rdfs:label "config status" ;
+    rdfs:comment "Configuration status (e.g., vulnerable, fixed, unknown) from authoritative feed fields." .

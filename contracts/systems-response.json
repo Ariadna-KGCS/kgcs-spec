@@ -1,0 +1,272 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kgcs.motherhacker.me/schema/systems-response.json",
+  "title": "KGCS Systems Agent Response Data",
+  "description": "Schema for the 'data' field in Systems Agent responses. Covers Platform/PlatformConfiguration ↔ Vulnerability ↔ Weakness ↔ Score traversals. Placed inside the canonical response envelope (agent-consumable-schema.json).",
+  "type": "object",
+  "required": ["vulnerabilities"],
+  "additionalProperties": false,
+  "properties": {
+    "vulnerabilities": {
+      "type": "array",
+      "description": "List of vulnerabilities matching the query. Empty array when status is 'empty'.",
+      "items": {
+        "type": "object",
+        "required": ["cveId"],
+        "additionalProperties": false,
+        "properties": {
+          "cveId": {
+            "type": "string",
+            "pattern": "^CVE-\\d{4}-\\d+$",
+            "description": "Canonical CVE identifier.",
+            "examples": ["CVE-2021-44228"]
+          },
+          "published": {
+            "type": "string",
+            "format": "date-time",
+            "description": "NVD publication timestamp."
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "NVD last-modified timestamp."
+          },
+          "source": {
+            "type": "string",
+            "description": "Authoritative source identifier (sourceIdentifier from NVD).",
+            "examples": ["nvd@nist.gov"]
+          },
+          "scores": {
+            "type": "array",
+            "description": "CVSS scores across all versions. Each version is a separate node — never merged.",
+            "items": {
+              "type": "object",
+              "required": ["version", "baseScore"],
+              "additionalProperties": false,
+              "properties": {
+                "scoreId": {
+                  "type": "string",
+                  "description": "Unique score node key: '{cveId}_{version}'.",
+                  "examples": ["CVE-2021-44228_3.1"]
+                },
+                "version": {
+                  "type": "string",
+                  "enum": ["2.0", "3.0", "3.1", "4.0"],
+                  "description": "CVSS version string. Stored verbatim; never normalised."
+                },
+                "baseScore": {
+                  "type": "number",
+                  "minimum": 0.0,
+                  "maximum": 10.0,
+                  "description": "CVSS base score."
+                }
+              }
+            }
+          },
+          "weakness": {
+            "type": "object",
+            "description": "Root-cause weakness via CAUSED_BY edge. Absent when CVE has no canonical CWE (NVD placeholder).",
+            "required": ["cweId"],
+            "additionalProperties": false,
+            "properties": {
+              "cweId": {
+                "type": "string",
+                "pattern": "^CWE-\\d+$",
+                "description": "Canonical CWE identifier.",
+                "examples": ["CWE-917", "CWE-79"]
+              },
+              "abstraction": {
+                "type": "string",
+                "enum": ["Pillar", "Class", "Base", "Variant", "Compound"],
+                "description": "CWE abstraction level."
+              },
+              "name": {
+                "type": "string",
+                "description": "CWE name from MITRE CWE catalog."
+              }
+            }
+          },
+          "platforms": {
+            "type": "array",
+            "description": "PlatformConfiguration nodes affected by this vulnerability (AFFECTS edges). Included when query was by CPE.",
+            "items": {
+              "type": "object",
+              "required": ["matchCriteriaId"],
+              "additionalProperties": false,
+              "properties": {
+                "matchCriteriaId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "NVD CPE match criteria identifier."
+                },
+                "cpeUri": {
+                  "type": "string",
+                  "description": "CPE URI expression for this configuration.",
+                  "examples": ["cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*"]
+                },
+                "configStatus": {
+                  "type": "string",
+                  "description": "NVD configuration status."
+                }
+              }
+            }
+          },
+          "resolvedPlatforms": {
+            "type": "array",
+            "description": "Concrete canonical Platform nodes resolved through MATCHES_PLATFORM from the applicability layer.",
+            "items": {
+              "type": "object",
+              "required": ["cpeUri"],
+              "additionalProperties": false,
+              "properties": {
+                "cpeUri": {
+                  "type": "string",
+                  "description": "Canonical CPE 2.3 platform string."
+                },
+                "cpeNameId": {
+                  "type": "string",
+                  "description": "NVD CPE dictionary identifier when available."
+                },
+                "part": {
+                  "type": "string"
+                },
+                "vendor": {
+                  "type": "string"
+                },
+                "product": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "applicability": {
+            "type": "object",
+            "description": "Explicit grouped applicability structure preserved from CVE configuration logic.",
+            "required": ["configurations"],
+            "additionalProperties": false,
+            "properties": {
+              "configurations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["vcId", "operator", "negate", "nodes"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "vcId": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string",
+                      "enum": ["AND", "OR"]
+                    },
+                    "negate": {
+                      "type": "boolean"
+                    },
+                    "nodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["vcnId", "operator", "negate", "criteria"],
+                        "additionalProperties": false,
+                        "properties": {
+                          "vcnId": {
+                            "type": "string"
+                          },
+                          "operator": {
+                            "type": "string",
+                            "enum": ["AND", "OR"]
+                          },
+                          "negate": {
+                            "type": "boolean"
+                          },
+                          "criteria": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": ["matchCriteriaId", "vulnerable"],
+                              "additionalProperties": false,
+                              "properties": {
+                                "matchCriteriaId": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "criteria": {
+                                  "type": "string"
+                                },
+                                "vulnerable": {
+                                  "type": "boolean"
+                                },
+                                "matchIndex": {
+                                  "type": "integer"
+                                },
+                                "configStatus": {
+                                  "type": "string"
+                                },
+                                "versionStartExcluding": {
+                                  "type": "string"
+                                },
+                                "versionStartIncluding": {
+                                  "type": "string"
+                                },
+                                "versionEndExcluding": {
+                                  "type": "string"
+                                },
+                                "versionEndIncluding": {
+                                  "type": "string"
+                                },
+                                "resolvedPlatforms": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": ["cpeUri"],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "cpeUri": {
+                                        "type": "string"
+                                      },
+                                      "cpeNameId": {
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "vulnerabilities": [
+        {
+          "cveId": "CVE-2021-44228",
+          "published": "2021-12-10T00:00:00Z",
+          "lastModified": "2024-01-15T00:00:00Z",
+          "source": "nvd@nist.gov",
+          "scores": [
+            { "scoreId": "CVE-2021-44228_3.1", "version": "3.1", "baseScore": 10.0 },
+            { "scoreId": "CVE-2021-44228_2.0", "version": "2.0", "baseScore": 9.3 }
+          ],
+          "weakness": {
+            "cweId": "CWE-917",
+            "abstraction": "Base",
+            "name": "Improper Neutralization of Special Elements used in an Expression Language Statement"
+          }
+        }
+      ]
+    }
+  ]
+}

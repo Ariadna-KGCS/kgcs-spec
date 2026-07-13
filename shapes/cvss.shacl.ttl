@@ -1,0 +1,65 @@
+# KGCS CVSS SHACL Shapes v1.0
+#
+# Validates Score nodes against the CVSS ontology
+# (standards/cvss/cvss-ontology-v1.0.owl).
+#
+# Source standard: NIST NVD CVSS v2.0, v3.0, v3.1, v4.0
+# Enforcement level: STRICT (reject at ingest)
+#
+# KEY INVARIANT: CVSS versions must NEVER be merged into a single Score.
+# Each version produces a distinct Score node with a distinct scoreId.
+# scoreId format: {cveId}_{version}  e.g. CVE-2021-44228_3.1
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cvss:  <http://www.motherhacker.me/kgcs/ontology/cvss#> .
+
+
+# ---------------------------------------------------------------------------
+# Score node shape
+#
+# Every Score node must carry:
+#   - scoreId: composite key {cveId}_{version} — globally unique
+#   - version: exact version string from NVD; never normalised
+#   - baseScore: numeric severity in range [0.0, 10.0]
+# ---------------------------------------------------------------------------
+
+cvss:ScoreShape
+    a sh:NodeShape ;
+    sh:targetClass cvss:Score ;
+
+    # scoreId: composite unique key
+    sh:property [
+        sh:path cvss:scoreId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CVE-\\d{4}-\\d+_(2\\.0|3\\.0|3\\.1|4\\.0)$" ;
+        sh:message "Score must have exactly one scoreId matching {cveId}_{version}." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # version: exact CVSS version as reported by NVD — must never be normalised
+    # Valid values: "2.0", "3.0", "3.1", "4.0"
+    sh:property [
+        sh:path cvss:version ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "2.0" "3.0" "3.1" "4.0" ) ;
+        sh:message "Score.version must be exactly one of: 2.0, 3.0, 3.1, 4.0." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # baseScore: numeric severity in [0.0, 10.0]
+    sh:property [
+        sh:path cvss:baseScore ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 10.0 ;
+        sh:message "Score.baseScore must be a decimal in [0.0, 10.0]." ;
+        sh:severity sh:Violation ;
+    ] .

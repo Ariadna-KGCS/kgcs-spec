@@ -1,0 +1,66 @@
+@prefix cvss: <http://www.motherhacker.me/kgcs/ontology/cvss#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+cvss:CVSSOntology a owl:Ontology ;
+    rdfs:label "KGCS CVSS Ontology v1.0" ;
+    rdfs:comment "CVSS score semantics and systems-agent compatibility predicates aligned with Core vulnerability scoring relations." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+cvss:Score a owl:Class ;
+    rdfs:label "Score" ;
+    rdfs:comment "Systems-agent view alias for Core VulnerabilityScore (CVSS versioned score node)." ;
+    owl:equivalentClass kgcs:VulnerabilityScore .
+
+#################################################################
+# Object Properties
+#################################################################
+
+cvss:hasScore a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range kgcs:VulnerabilityScore ;
+    rdfs:label "has score" ;
+    rdfs:comment "Compatibility predicate aligned with HAS_SCORE graph edge and Core scored_by semantics." ;
+    rdfs:subPropertyOf kgcs:scored_by ;
+    owl:inverseOf cvss:scoreOfVulnerability .
+
+cvss:scoreOfVulnerability a owl:ObjectProperty ;
+    rdfs:domain kgcs:VulnerabilityScore ;
+    rdfs:range kgcs:Vulnerability ;
+    rdfs:label "score of vulnerability" ;
+    rdfs:comment "Inverse of cvss:hasScore for compatibility mapping." ;
+    rdfs:subPropertyOf kgcs:score_of ;
+    owl:inverseOf cvss:hasScore .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+cvss:scoreId a owl:DatatypeProperty ;
+    rdfs:domain kgcs:VulnerabilityScore ;
+    rdfs:range xsd:string ;
+    rdfs:label "score id" ;
+    rdfs:comment "Stable identifier for a CVSS score instance." .
+
+cvss:version a owl:DatatypeProperty ;
+    rdfs:domain kgcs:VulnerabilityScore ;
+    rdfs:range xsd:string ;
+    rdfs:label "version" ;
+    rdfs:comment "CVSS version string for a VulnerabilityScore instance." .
+
+cvss:baseScore a owl:DatatypeProperty ;
+    rdfs:domain kgcs:VulnerabilityScore ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "base score" ;
+    rdfs:comment "CVSS base score value from authoritative CVSS vectors." .

@@ -1,0 +1,174 @@
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe: <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cve: <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cwe: <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec: <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix d3fend: <http://www.motherhacker.me/kgcs/ontology/d3fend#> .
+@prefix car: <http://www.motherhacker.me/kgcs/ontology/car#> .
+@prefix shield: <http://www.motherhacker.me/kgcs/ontology/shield#> .
+@prefix engage: <http://www.motherhacker.me/kgcs/ontology/engage#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+kgcs:CoreOntology a owl:Ontology ;
+    rdfs:label "KGCS Core Ontology v1.0" ;
+    rdfs:comment "Authoritative cybersecurity semantic backbone. Frozen v1.0." .
+
+#################################################################
+# Classes
+#################################################################
+
+kgcs:Platform a owl:Class .
+kgcs:PlatformConfiguration a owl:Class .
+kgcs:Vulnerability a owl:Class .
+kgcs:VulnerabilityScore a owl:Class .
+kgcs:Reference a owl:Class .
+kgcs:Weakness a owl:Class .
+kgcs:AttackPattern a owl:Class .
+kgcs:Technique a owl:Class .
+kgcs:Tactic a owl:Class .
+kgcs:DefensiveTechnique a owl:Class .
+kgcs:DetectionAnalytic a owl:Class .
+kgcs:DeceptionTechnique a owl:Class .
+kgcs:EngagementConcept a owl:Class .
+
+#################################################################
+# Disjointness
+#################################################################
+
+kgcs:Platform owl:disjointWith kgcs:Vulnerability ,
+                              kgcs:Weakness ,
+                              kgcs:Technique ,
+                              kgcs:AttackPattern .
+
+kgcs:Vulnerability owl:disjointWith kgcs:Weakness ,
+                                   kgcs:Technique ,
+                                   kgcs:AttackPattern .
+
+kgcs:Weakness owl:disjointWith kgcs:Technique ,
+                              kgcs:AttackPattern .
+
+kgcs:Technique owl:disjointWith kgcs:DefensiveTechnique ,
+                               kgcs:DetectionAnalytic ,
+                               kgcs:DeceptionTechnique .
+
+kgcs:DefensiveTechnique owl:disjointWith kgcs:DetectionAnalytic ,
+                                         kgcs:DeceptionTechnique .
+
+#################################################################
+# Object Properties
+#################################################################
+
+kgcs:affected_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:PlatformConfiguration ;
+    rdfs:range kgcs:Vulnerability .
+
+kgcs:scored_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range kgcs:VulnerabilityScore ;
+    owl:inverseOf kgcs:score_of .
+
+kgcs:score_of a owl:ObjectProperty ;
+    rdfs:domain kgcs:VulnerabilityScore ;
+    rdfs:range kgcs:Vulnerability ;
+    rdf:type owl:FunctionalProperty .
+
+kgcs:references a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range kgcs:Reference .
+
+kgcs:caused_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range kgcs:Weakness ;
+    owl:inverseOf kgcs:causes .
+
+kgcs:causes a owl:ObjectProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range kgcs:Vulnerability .
+
+kgcs:exploited_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range kgcs:AttackPattern ;
+    owl:inverseOf kgcs:exploits .
+
+kgcs:exploits a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:Weakness .
+
+kgcs:implemented_as a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:Technique ;
+    owl:inverseOf kgcs:implements .
+
+kgcs:implements a owl:ObjectProperty ;
+    rdfs:domain kgcs:Technique ;
+    rdfs:range kgcs:AttackPattern .
+
+kgcs:belongs_to a owl:ObjectProperty ;
+    rdfs:domain kgcs:Technique ;
+    rdfs:range kgcs:Tactic ;
+    rdf:type owl:FunctionalProperty .
+
+kgcs:subtechnique_of a owl:ObjectProperty ;
+    rdfs:domain kgcs:Technique ;
+    rdfs:range kgcs:Technique ;
+    rdf:type owl:FunctionalProperty .
+
+kgcs:mitigated_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Technique ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    owl:inverseOf kgcs:mitigates .
+
+kgcs:mitigates a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range kgcs:Technique .
+
+kgcs:detected_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Technique ;
+    rdfs:range kgcs:DetectionAnalytic ;
+    owl:inverseOf kgcs:detects .
+
+kgcs:detects a owl:ObjectProperty ;
+    rdfs:domain kgcs:DetectionAnalytic ;
+    rdfs:range kgcs:Technique .
+
+kgcs:countered_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Technique ;
+    rdfs:range kgcs:DeceptionTechnique .
+
+kgcs:disrupts a owl:ObjectProperty ;
+    rdfs:domain kgcs:EngagementConcept ;
+    rdfs:range kgcs:Technique .
+
+#################################################################
+# Cardinality Restrictions
+#################################################################
+
+kgcs:Technique rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty kgcs:belongs_to ;
+      owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass kgcs:Tactic
+    ] .
+
+kgcs:Technique rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty kgcs:subtechnique_of ;
+      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass kgcs:Technique
+    ] .
+
+kgcs:Vulnerability rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty kgcs:caused_by ;
+      owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass kgcs:Weakness
+    ] .

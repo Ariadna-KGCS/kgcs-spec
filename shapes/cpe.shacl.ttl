@@ -1,0 +1,142 @@
+# KGCS CPE SHACL Shapes v1.0
+#
+# Validates Platform and PlatformConfiguration nodes against
+# the CPE ontology (standards/cpe/cpe-ontology-v1.0.owl).
+#
+# Source standard: NIST NVD CPE 2.3 / CPE-MATCH
+# Enforcement level: STRICT (reject at ingest)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe:   <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+
+
+# ---------------------------------------------------------------------------
+# Platform node shape
+#
+# Every Platform node must carry the canonical CPE URI and the NVD-assigned
+# cpeNameId (UUID). Without these, CPE→CVE join resolution is impossible.
+# ---------------------------------------------------------------------------
+
+cpe:PlatformShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Platform ;
+
+    # cpeUri: canonical CPE 2.3 URI — primary unique key
+    sh:property [
+        sh:path cpe:cpeUri ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 10 ;
+        sh:message "Platform must have exactly one cpeUri (canonical CPE 2.3 URI)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # cpeNameId: NVD UUID — secondary unique key
+    sh:property [
+        sh:path cpe:cpeNameId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Platform must have exactly one cpeNameId (NVD UUID)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # --- Format patterns (Warning: formats per NVD source contracts; raw data
+    # not re-verified in this change — see CHANGELOG) ---
+    sh:property [
+        sh:path cpe:cpeUri ;
+        sh:pattern "^cpe:2\\.3:[aho*-]:" ;
+        sh:message "cpeUri should be a CPE 2.3 URI (lowercased at ingest)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path cpe:cpeNameId ;
+        sh:pattern "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$" ;
+        sh:message "cpeNameId should be an NVD UUID." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # part: CPE part field (a=application, o=os, h=hardware)
+    sh:property [
+        sh:path cpe:part ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Platform must have a part field (a, o, or h)." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # vendor: CPE vendor field
+    sh:property [
+        sh:path cpe:vendor ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Platform must have a vendor field." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # product: CPE product field
+    sh:property [
+        sh:path cpe:product ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Platform must have a product field." ;
+        sh:severity sh:Warning ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# PlatformConfiguration node shape
+#
+# Each PlatformConfiguration represents a version range or specific version
+# of a Platform that is confirmed applicable to a CVE. It is the direct
+# AFFECTS target from Vulnerability — never the Platform itself.
+# ---------------------------------------------------------------------------
+
+cpe:PlatformConfigurationShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:PlatformConfiguration ;
+
+    # matchCriteriaId: NVD CPE Match ID — primary unique key
+    sh:property [
+        sh:path cpe:matchCriteriaId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "PlatformConfiguration must have exactly one matchCriteriaId." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # criteria: raw CPE criteria expression (e.g. cpe:2.3:a:apache:log4j:*:...)
+    sh:property [
+        sh:path cpe:criteria ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "PlatformConfiguration must have a criteria field." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # --- Format patterns (Warning) ---
+    sh:property [
+        sh:path cpe:matchCriteriaId ;
+        sh:pattern "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$" ;
+        sh:message "matchCriteriaId should be an NVD UUID." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path cpe:criteria ;
+        sh:pattern "^cpe:2\\.3:[aho*-]:" ;
+        sh:message "criteria should be a CPE 2.3 wildcard expression." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # configStatus: Active | Inactive (from NVD matchString.status)
+    sh:property [
+        sh:path cpe:configStatus ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "PlatformConfiguration must have a configStatus." ;
+        sh:severity sh:Warning ;
+    ] .

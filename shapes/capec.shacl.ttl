@@ -1,0 +1,52 @@
+# KGCS CAPEC SHACL Shapes v1.0
+#
+# Validates AttackPattern nodes against the CAPEC ontology
+# (standards/capec/capec-ontology-v1.0.owl).
+#
+# Source standard: MITRE CAPEC XML
+# Enforcement level: STRICT (reject at ingest)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix capec: <http://www.motherhacker.me/kgcs/ontology/capec#> .
+
+
+# ---------------------------------------------------------------------------
+# AttackPattern node shape
+#
+# Every AttackPattern node must carry:
+#   - capecId: canonical identifier e.g. CAPEC-242 — unique key
+#   - name: attack pattern name from MITRE CAPEC
+#
+# Note: abstraction field is optional (may be meta, standard, or detailed).
+# Deprecated attack patterns are still loaded (CVEs may reference them) but
+# their Deprecated status is preserved as a property.
+# ---------------------------------------------------------------------------
+
+capec:AttackPatternShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:AttackPattern ;
+
+    # capecId: canonical identifier — primary unique key
+    # KGCS decision: patterned string "CAPEC-<n>", consistent with all other
+    # standards' patterned IDs. OWL v1.0 range xsd:integer is a known deviation
+    # (see shapes/README.md, v1.1 candidates).
+    sh:property [
+        sh:path capec:capecId ;
+        sh:datatype xsd:string ;
+        sh:pattern "^CAPEC-\\d+$" ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AttackPattern must have exactly one capecId matching CAPEC-N." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # name: human-readable attack pattern name
+    sh:property [
+        sh:path capec:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "AttackPattern must have a name." ;
+        sh:severity sh:Warning ;
+    ] .

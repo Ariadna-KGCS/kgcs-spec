@@ -1,0 +1,83 @@
+# KGCS CVE SHACL Shapes v1.0
+#
+# Validates Vulnerability and Reference nodes against
+# the CVE ontology (standards/cve/cve-ontology-v1.0.owl).
+#
+# Source standard: NIST NVD CVE JSON 2.0
+# Enforcement level: STRICT (reject at ingest)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:   <http://www.motherhacker.me/kgcs/ontology/cve#> .
+
+
+# ---------------------------------------------------------------------------
+# Vulnerability node shape
+#
+# Every Vulnerability node requires:
+#   - cveId matching the canonical CVE-YYYY-NNNNN format
+#   - published date (NVD assignment date)
+#   - source (NVD sourceIdentifier, e.g. cve@mitre.org)
+#
+# Note: CAUSED_BY (minCount 0) because NVD uses NVD-CWE-Other / NVD-CWE-noinfo
+# for ~15% of CVEs, which have no mappable CWE ID. Tracked as a coverage metric
+# in extract_neo4j_stats.py.
+# ---------------------------------------------------------------------------
+
+cve:VulnerabilityShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Vulnerability ;
+
+    # cveId: canonical identifier — primary unique key
+    # Pattern: CVE-YYYY-NNNNN (4-digit year, variable-length sequence number)
+    sh:property [
+        sh:path cve:cveId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CVE-\\d{4}-\\d+$" ;
+        sh:message "Vulnerability must have exactly one cveId matching CVE-YYYY-NNNNN." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # published: xsd:dateTime per OWL range (graph layer stores ISO-8601 string)
+    sh:property [
+        sh:path cve:published ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:message "Vulnerability must have a published date." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # source: NVD sourceIdentifier (e.g. cve@mitre.org, security@huntrdev.com)
+    sh:property [
+        sh:path cve:source ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Vulnerability must have a source identifier." ;
+        sh:severity sh:Warning ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Reference node shape
+#
+# Every Reference node must carry the URL that it represents.
+# References are deduplicated globally — the URL is the unique key.
+# ---------------------------------------------------------------------------
+
+cve:ReferenceShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Reference ;
+
+    # referenceUrl: canonical URL — unique key
+    sh:property [
+        sh:path cve:referenceUrl ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 7 ;
+        sh:message "Reference must have exactly one referenceUrl." ;
+        sh:severity sh:Violation ;
+    ] .

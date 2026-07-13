@@ -1,0 +1,152 @@
+# KGCS Core SHACL Shapes v1.0
+#
+# Enforces causal chain invariants and relationship direction constraints
+# defined in core/core-ontology-v1.0.owl.
+#
+# These shapes validate loaded RDF instance data (ABox).
+# Equivalent Neo4j enforcement: scripts/validation/validate_all_standards.py --post-load
+#
+# Enforcement level: STRICT (reject data at ingest; SH-CORE-01 through SH-CORE-04)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:   <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cpe:   <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cvss:  <http://www.motherhacker.me/kgcs/ontology/cvss#> .
+@prefix cwe:   <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec: <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-01 — AFFECTS must target PlatformConfiguration, never Platform
+#
+# Invariant: Vulnerability affects PlatformConfiguration (version-specific
+# configuration), never a Platform node directly. Enforces that exposure is
+# modelled at the configuration level, not the product level.
+# ---------------------------------------------------------------------------
+
+kgcs:AffectsTargetShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Vulnerability ;
+    sh:property [
+        sh:path cve:affects ;
+        sh:class kgcs:PlatformConfiguration ;
+        sh:message "SH-CORE-01: AFFECTS must target PlatformConfiguration, not Platform directly." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-02 — No Vulnerability → Technique shortcut
+#
+# Invariant: A Vulnerability must NOT link directly to a Technique.
+# The path must traverse Weakness → AttackPattern first.
+# ---------------------------------------------------------------------------
+
+kgcs:NoVulnTechniqueShortcutShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Vulnerability ;
+    sh:not [
+        sh:property [
+            sh:path kgcs:implemented_as ;
+            sh:minCount 1 ;
+        ]
+    ] ;
+    sh:message "SH-CORE-02: Vulnerability must not link directly to Technique (hop skipping forbidden)." ;
+    sh:severity sh:Violation .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-03 — CAUSED_BY must target Weakness, not AttackPattern
+#
+# Invariant: The root-cause of a Vulnerability is always a Weakness (CWE),
+# never an AttackPattern or Technique directly.
+# ---------------------------------------------------------------------------
+
+kgcs:CausedByTargetShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Vulnerability ;
+    sh:property [
+        sh:path kgcs:caused_by ;
+        sh:class kgcs:Weakness ;
+        sh:message "SH-CORE-03: CAUSED_BY must target Weakness (CWE), not AttackPattern." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-04 — DEMONSTRATED_BY source must be Weakness, target AttackPattern
+#
+# Invariant: exploited_by (graph: DEMONSTRATED_BY) may only originate from Weakness nodes.
+# ---------------------------------------------------------------------------
+
+kgcs:DemonstratedBySourceShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Weakness ;
+    sh:property [
+        sh:path kgcs:exploited_by ;
+        sh:class kgcs:AttackPattern ;
+        sh:message "SH-CORE-04: DEMONSTRATED_BY source must be Weakness, target must be AttackPattern." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-05 — IMPLEMENTS source must be AttackPattern, target Technique
+#
+# Invariant: The mapping from abstract attack pattern to concrete technique
+# must always originate from an AttackPattern node.
+# ---------------------------------------------------------------------------
+
+kgcs:ImplementsSourceShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:AttackPattern ;
+    sh:property [
+        sh:path kgcs:implemented_as ;
+        sh:class kgcs:Technique ;
+        sh:message "SH-CORE-05: IMPLEMENTS source must be AttackPattern, target must be Technique." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-06 — Every Technique belongs to at least one Tactic
+#
+# Invariant: A Technique with no Tactic linkage is unreachable by any
+# traversal template and cannot appear in agent responses.
+# ---------------------------------------------------------------------------
+
+kgcs:TechniqueTacticShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Technique ;
+    sh:property [
+        sh:path attack:contains_by ;
+        sh:class attack:Tactic ;
+        sh:minCount 1 ;
+        sh:message "SH-CORE-06: Every Technique must belong to at least one Tactic via PART_OF." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SH-CORE-07 — SubTechnique has exactly one SUBTECHNIQUE_OF parent
+#
+# Invariant: A SubTechnique must have exactly one parent Technique.
+# More or fewer breaks cardinality enforced by the attck ontology.
+# ---------------------------------------------------------------------------
+
+kgcs:SubTechniqueCardinalityShape
+    a sh:NodeShape ;
+    sh:targetClass attack:SubTechnique ;
+    sh:property [
+        sh:path attack:subtechnique_of ;
+        sh:class attack:Technique ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SH-CORE-07: SubTechnique must have exactly one SUBTECHNIQUE_OF parent Technique." ;
+        sh:severity sh:Violation ;
+    ] .

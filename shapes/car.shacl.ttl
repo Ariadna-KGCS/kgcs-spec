@@ -1,0 +1,48 @@
+# KGCS CAR SHACL Shapes v1.0
+#
+# Validates DetectionAnalytic nodes against the CAR ontology
+# (standards/car/car-ontology-v1.0.owl).
+#
+# Source standard: MITRE Cyber Analytics Repository (CAR) YAML
+# Enforcement level: STRICT (reject at ingest)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix car:   <http://www.motherhacker.me/kgcs/ontology/car#> .
+
+
+# ---------------------------------------------------------------------------
+# DetectionAnalytic node shape
+#
+# Every DetectionAnalytic node must carry:
+#   - analyticId: canonical CAR identifier e.g. CAR-2013-01-002 — unique key
+#   - title: human-readable analytic title
+#
+# analyticId pattern: CAR-YYYY-MM-NNN (fixed format from MITRE CAR YAML files)
+# ---------------------------------------------------------------------------
+
+car:DetectionAnalyticShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:DetectionAnalytic ;
+
+    # analyticId: canonical CAR identifier — primary unique key
+    # Pattern: CAR-YYYY-MM-NNN
+    sh:property [
+        sh:path car:analyticId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CAR-\\d{4}-\\d{2}-\\d{3}$" ;
+        sh:message "DetectionAnalytic must have exactly one analyticId matching CAR-YYYY-MM-NNN." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # title: human-readable analytic title from YAML
+    sh:property [
+        sh:path car:title ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "DetectionAnalytic must have a title." ;
+        sh:severity sh:Warning ;
+    ] .

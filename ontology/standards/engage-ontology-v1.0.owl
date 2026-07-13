@@ -1,0 +1,271 @@
+@prefix engage: <http://www.motherhacker.me/kgcs/ontology/engage#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+engage:EngageOntology a owl:Ontology ;
+    rdfs:label "ENGAGE Ontology v1.0" ;
+    rdfs:comment "MITRE ENGAGE framework for defender adversary engagement operations. Includes hierarchical goal-approach-activity federation with Engagement Adversarial Vulnerabilities (EAV) exploitation semantics and ATT&CK technique alignment." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+engage:EngagementActivity a owl:Class ;
+    rdfs:label "Engagement Activity" ;
+    rdfs:comment "Specific engagement activity (collection, detection, prevention, direction, disruption, reassurance, motivation, planning, analysis). Represents a concrete action defenders can take against adversaries." ;
+    rdfs:subClassOf kgcs:EngagementConcept .
+
+engage:EngagementApproach a owl:Class ;
+    rdfs:label "Engagement Approach" ;
+    rdfs:comment "Strategic or tactical approach that organizes related activities and helps achieve engagement goals. Examples: Collect, Detect, Prevent, Direct, Disrupt, Reassure, Motivate (engagement) or Plan, Analysis (strategic)." ;
+    rdfs:subClassOf kgcs:EngagementConcept .
+
+engage:EngagementGoal a owl:Class ;
+    rdfs:label "Engagement Goal" ;
+    rdfs:comment "High-level objective for engagement operations, decomposed into approaches and activities. Examples: Expose, Affect, Elicit (engagement goals) or Prepare, Understand (strategic goals)." ;
+    rdfs:subClassOf kgcs:EngagementConcept .
+
+engage:EngagementAdversarialVulnerability a owl:Class ;
+    rdfs:label "Engagement Adversarial Vulnerability" ;
+    rdfs:comment "Behavioral vulnerability that adversaries exhibit when operating in engagement environments. Describes specific weaknesses that engagement activities can exploit (EAVxxxx)." .
+
+engage:Reference a owl:Class ;
+    rdfs:label "Engagement Reference" ;
+    rdfs:comment "Academic paper, technical documentation, or other reference material supporting an engagement activity. Links to external knowledge grounding engagement tactics." ;
+    rdfs:subClassOf kgcs:Reference .
+
+#################################################################
+# Disjointness Constraints
+#################################################################
+
+engage:EngagementActivity owl:disjointWith engage:EngagementApproach .
+engage:EngagementActivity owl:disjointWith engage:EngagementGoal .
+engage:EngagementApproach owl:disjointWith engage:EngagementGoal .
+
+#################################################################
+# Object Properties (Relationships)
+#################################################################
+
+engage:supports_goal a owl:ObjectProperty ;
+    rdfs:label "supports goal" ;
+    rdfs:comment "This activity helps achieve this engagement goal. A single activity can support multiple goals." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range engage:EngagementGoal ;
+    owl:inverseOf engage:supported_by_activity .
+
+engage:supported_by_activity a owl:ObjectProperty ;
+    rdfs:label "supported by activity" ;
+    rdfs:comment "This goal is achieved by these activities. Inverse of supports_goal." ;
+    rdfs:domain engage:EngagementGoal ;
+    rdfs:range engage:EngagementActivity .
+
+engage:exploits_vulnerability a owl:ObjectProperty ;
+    rdfs:label "exploits vulnerability" ;
+    rdfs:comment "This activity can exploit this adversary behavioral vulnerability. Links to EAV describing specific weaknesses." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range engage:EngagementAdversarialVulnerability ;
+    owl:inverseOf engage:exploited_by_activity .
+
+engage:exploited_by_activity a owl:ObjectProperty ;
+    rdfs:label "exploited by activity" ;
+    rdfs:comment "This vulnerability is exploited by these activities. Inverse of exploits_vulnerability." ;
+    rdfs:domain engage:EngagementAdversarialVulnerability ;
+    rdfs:range engage:EngagementActivity .
+
+engage:engages_technique a owl:ObjectProperty ;
+    rdfs:label "engages technique" ;
+    rdfs:comment "This activity engages with or detects this ATT&CK offensive technique. Enables defensive-offensive alignment." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range attack:Technique ;
+    owl:inverseOf engage:engaged_by_activity .
+
+engage:engaged_by_activity a owl:ObjectProperty ;
+    rdfs:label "engaged by activity" ;
+    rdfs:comment "This ATT&CK technique is engaged by these ENGAGE activities. Inverse of engages_technique." ;
+    rdfs:domain attack:Technique ;
+    rdfs:range engage:EngagementActivity .
+
+engage:engages_tactic a owl:ObjectProperty ;
+    rdfs:label "engages tactic" ;
+    rdfs:comment "This activity provides coverage for this ATT&CK tactic. Derived from technique-to-tactic mappings." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range attack:Tactic ;
+    owl:inverseOf engage:engaged_by_activity_tactic .
+
+engage:engaged_by_activity_tactic a owl:ObjectProperty ;
+    rdfs:label "engaged by activity (tactic)" ;
+    rdfs:comment "This ATT&CK tactic is engaged by these activities. Inverse of engages_tactic." ;
+    rdfs:domain attack:Tactic ;
+    rdfs:range engage:EngagementActivity .
+
+engage:goal_has_approach a owl:ObjectProperty ;
+    rdfs:label "goal has approach" ;
+    rdfs:comment "This goal decomposes into these approaches. Goals are achieved through approaches which organize activities." ;
+    rdfs:domain engage:EngagementGoal ;
+    rdfs:range engage:EngagementApproach ;
+    owl:inverseOf engage:approach_meets_goal .
+
+engage:approach_meets_goal a owl:ObjectProperty ;
+    rdfs:label "approach meets goal" ;
+    rdfs:comment "This approach helps achieve this goal. Inverse of goal_has_approach." ;
+    rdfs:domain engage:EngagementApproach ;
+    rdfs:range engage:EngagementGoal .
+
+engage:approach_enables_activity a owl:ObjectProperty ;
+    rdfs:label "approach enables activity" ;
+    rdfs:comment "This approach organizes and enables these activities." ;
+    rdfs:domain engage:EngagementApproach ;
+    rdfs:range engage:EngagementActivity ;
+    owl:inverseOf engage:activity_follows_approach .
+
+engage:activity_follows_approach a owl:ObjectProperty ;
+    rdfs:label "activity follows approach" ;
+    rdfs:comment "This activity is organized by this approach. Inverse of approach_enables_activity." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range engage:EngagementApproach .
+
+engage:documents_activity a owl:ObjectProperty ;
+    rdfs:label "documents activity" ;
+    rdfs:comment "This reference documents this activity. Functional property: 1-to-1 relationship." ;
+    rdfs:domain engage:Reference ;
+    rdfs:range engage:EngagementActivity ;
+    rdf:type owl:FunctionalProperty ;
+    owl:inverseOf engage:documented_by_reference .
+
+engage:documented_by_reference a owl:ObjectProperty ;
+    rdfs:label "documented by reference" ;
+    rdfs:comment "This activity is documented by this reference. Inverse of documents_activity." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range engage:Reference ;
+    rdf:type owl:InverseFunctionalProperty .
+
+#################################################################
+# Datatype Properties (Metadata & Identifiers)
+#################################################################
+
+engage:activityId a owl:DatatypeProperty ;
+    rdfs:label "activity ID" ;
+    rdfs:comment "Unique engagement activity identifier in format EACxxxx (e.g., EAC0001). Global unique constraint enforced." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:activityType a owl:DatatypeProperty ;
+    rdfs:label "activity type" ;
+    rdfs:comment "Classification: Engagement (active operations) or Strategic (planning/analysis). Required exactly-1 constraint." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:longDescription a owl:DatatypeProperty ;
+    rdfs:label "long description" ;
+    rdfs:comment "Detailed description with examples and contextual information." ;
+    rdfs:domain engage:EngagementActivity ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:approachId a owl:DatatypeProperty ;
+    rdfs:label "approach ID" ;
+    rdfs:comment "Unique approach identifier in format (EAP|SAP)xxxx. Global unique constraint enforced." ;
+    rdfs:domain engage:EngagementApproach ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:goalId a owl:DatatypeProperty ;
+    rdfs:label "goal ID" ;
+    rdfs:comment "Unique goal identifier in format (EGO|SGO)xxxx. Global unique constraint enforced." ;
+    rdfs:domain engage:EngagementGoal ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:goalType a owl:DatatypeProperty ;
+    rdfs:label "goal type" ;
+    rdfs:comment "Classification: Engagement (tactical) or Strategic (long-term). Optional, 0-1 cardinality." ;
+    rdfs:domain engage:EngagementGoal ;
+    rdfs:range xsd:string .
+
+engage:refId a owl:DatatypeProperty ;
+    rdfs:label "reference ID" ;
+    rdfs:comment "Unique reference identifier in format REFxxxx (e.g., REF0001). Global unique constraint enforced." ;
+    rdfs:domain engage:Reference ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:url a owl:DatatypeProperty ;
+    rdfs:label "URL" ;
+    rdfs:comment "Valid URI to reference material (DOI, arxiv, documentation). Required exactly-1 constraint." ;
+    rdfs:domain engage:Reference ;
+    rdfs:range xsd:anyURI ;
+    rdf:type owl:FunctionalProperty .
+
+engage:eav_id a owl:DatatypeProperty ;
+    rdfs:label "EAV ID" ;
+    rdfs:comment "Engagement Adversarial Vulnerability identifier in format EAVxxxx. Global unique constraint." ;
+    rdfs:domain engage:EngagementAdversarialVulnerability ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+engage:eav_description a owl:DatatypeProperty ;
+    rdfs:label "EAV description" ;
+    rdfs:comment "Behavioral vulnerability description explaining when/how adversaries become vulnerable." ;
+    rdfs:domain engage:EngagementAdversarialVulnerability ;
+    rdfs:range xsd:string ;
+    rdf:type owl:FunctionalProperty .
+
+#################################################################
+# Cardinality Constraints
+#################################################################
+
+# Activity must have exactly 1 type (Engagement or Strategic)
+[] a owl:Class ;
+    owl:onClass engage:EngagementActivity ;
+    owl:allValuesFrom [ a owl:Restriction ;
+        owl:onProperty engage:activityType ;
+        owl:minCardinality 1 ;
+        owl:maxCardinality 1 ] .
+
+# Reference must link to exactly 1 activity (1-to-1 binding)
+[] a owl:Class ;
+    owl:onClass engage:Reference ;
+    owl:allValuesFrom [ a owl:Restriction ;
+        owl:onProperty engage:documents_activity ;
+        owl:minCardinality 1 ;
+        owl:maxCardinality 1 ] .
+
+#################################################################
+# Key Instances / Examples (Optional - for documentation)
+#################################################################
+
+# Example instances help document the ontology structure
+
+engage:EGO0001 a engage:EngagementGoal ;
+    rdfs:label "Expose" ;
+    rdfs:comment "Reveal the presence of ongoing adversary operations" ;
+    engage:goalId "EGO0001" ;
+    engage:goalType "Engagement" .
+
+engage:EAP0001 a engage:EngagementApproach ;
+    rdfs:label "Collect" ;
+    rdfs:comment "Gather adversary tools, observe tactics, and collect intelligence" ;
+    engage:approachId "EAP0001" .
+
+engage:EAC0001 a engage:EngagementActivity ;
+    rdfs:label "API Monitoring" ;
+    rdfs:comment "Monitor local APIs that might be used by adversary tools and activity" ;
+    engage:activityId "EAC0001" ;
+    engage:activityType "Engagement" ;
+    engage:supports_goal engage:EGO0001 .
+
+#################################################################
+# End of ENGAGE Ontology
+#################################################################

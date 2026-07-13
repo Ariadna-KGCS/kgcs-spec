@@ -1,0 +1,129 @@
+# KGCS ENGAGE SHACL Shapes v1.0
+#
+# Validates EngagementConcept nodes against the ENGAGE ontology
+# (standards/engage/engage-ontology-v1.0.owl).
+#
+# Source standard: MITRE ENGAGE JSON
+# Enforcement level: STANDARD (flag at pre-RAG)
+#
+# EngagementConcept covers three sub-types that share the same OWL class:
+#   - Activities  (activityId: EAC#### / SAC####)
+#   - Approaches  (approachId: EAP#### / SAP####)
+#   - Goals       (goalId: EGO#### / SGO####)
+#
+# Each node must have EXACTLY ONE of the three canonical ID properties.
+# DISRUPTS relationships originate only from activity nodes (EAC prefix).
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix engage: <http://www.motherhacker.me/kgcs/ontology/engage#> .
+
+
+# ---------------------------------------------------------------------------
+# EngagementConcept node shape
+#
+# Must have at least one canonical ID property:
+#   - activityId  for EAC/SAC nodes
+#   - approachId  for EAP/SAP nodes
+#   - goalId      for EGO/SGO nodes
+# ---------------------------------------------------------------------------
+
+engage:EngagementConceptShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf engage:activityId ;
+    sh:targetSubjectsOf engage:approachId ;
+    sh:targetSubjectsOf engage:goalId ;
+
+    # Require at least one of the three canonical ID properties
+    sh:or (
+        [
+            sh:property [
+                sh:path engage:activityId ;
+                sh:datatype xsd:string ;
+                sh:minCount 1 ;
+            ]
+        ]
+        [
+            sh:property [
+                sh:path engage:approachId ;
+                sh:datatype xsd:string ;
+                sh:minCount 1 ;
+            ]
+        ]
+        [
+            sh:property [
+                sh:path engage:goalId ;
+                sh:datatype xsd:string ;
+                sh:minCount 1 ;
+            ]
+        ]
+    ) ;
+    sh:message "EngagementConcept must have at least one of: activityId, approachId, or goalId." ;
+    sh:severity sh:Violation .
+
+
+# ---------------------------------------------------------------------------
+# EngagementActivity shape (when activityId is present)
+#
+# Validates that activity nodes carry the required name and engageType.
+# ---------------------------------------------------------------------------
+
+engage:EngagementActivityShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf engage:activityId ;
+
+    # activityId pattern: EAC or SAC followed by 4 digits
+    sh:property [
+        sh:path engage:activityId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[ES]AC\\d{4}$" ;
+        sh:message "Activity node activityId must match EAC\\d{4} or SAC\\d{4}." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # name: human-readable activity name
+    sh:property [
+        sh:path engage:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "EngagementConcept (activity) must have a name." ;
+        sh:severity sh:Warning ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Approach nodes: approachId format EAP####/SAP#### (per load_engage.py
+# source contract: approaches.json carries EAP/SAP concepts).
+# ---------------------------------------------------------------------------
+
+engage:ApproachShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf engage:approachId ;
+    sh:property [
+        sh:path engage:approachId ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:pattern "^[ES]AP\\d{4}$" ;
+        sh:message "Approach node approachId must match EAP\\d{4} or SAP\\d{4}." ;
+        sh:severity sh:Warning ;
+    ] .
+
+# ---------------------------------------------------------------------------
+# Goal nodes: goalId format EGO####/SGO#### (per load_engage.py source
+# contract: goals.json carries EGO/SGO concepts).
+# ---------------------------------------------------------------------------
+
+engage:GoalShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf engage:goalId ;
+    sh:property [
+        sh:path engage:goalId ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:pattern "^[ES]GO\\d{4}$" ;
+        sh:message "Goal node goalId must match EGO\\d{4} or SGO\\d{4}." ;
+        sh:severity sh:Warning ;
+    ] .

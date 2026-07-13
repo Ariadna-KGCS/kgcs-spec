@@ -1,0 +1,434 @@
+@prefix capec: <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cwe: <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+capec:CAPECOntology a owl:Ontology ;
+    rdfs:label "KGCS CAPEC Ontology v1.0" ;
+    rdfs:comment "MITRE CAPEC attack pattern methodology with relationships to weaknesses, prerequisites, execution flows, and detection strategies." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+capec:Category a owl:Class ;
+    rdfs:label "Category" ;
+    rdfs:comment "CAPEC category grouping attack patterns by effect/intent (e.g., 'Injection', 'Social Engineering')." ;
+    owl:disjointWith capec:View .
+
+capec:View a owl:Class ;
+    rdfs:label "View" ;
+    rdfs:comment "CAPEC view providing perspective-based organization of patterns (Graph, Explicit, or Implicit)." ;
+    owl:disjointWith capec:Category .
+
+capec:SkillRequirement a owl:Class ;
+    rdfs:label "Skill Requirement" ;
+    rdfs:comment "Attacker skill needed to execute attack pattern (High, Medium, Low)." .
+
+capec:Consequence a owl:Class ;
+    rdfs:label "Consequence" ;
+    rdfs:comment "Security impact of successful attack including scope (Confidentiality, Integrity, etc.) and technical impact." .
+
+capec:ExecutionStep a owl:Class ;
+    rdfs:label "Execution Step" ;
+    rdfs:comment "Single step in ordered attack execution flow with phase (Explore, Experiment, Exploit) and description." .
+
+#################################################################
+# Object Properties - Pattern Relationships
+#################################################################
+
+capec:childOf a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "child of" ;
+    rdfs:comment "Pattern at lower abstraction level inherits from higher abstraction parent pattern." ;
+    owl:inverseOf capec:parentOf .
+
+capec:parentOf a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "parent of" ;
+    rdfs:comment "Inverse of childOf; higher abstraction pattern generalizes lower abstraction patterns." ;
+    owl:inverseOf capec:childOf .
+
+capec:canPrecede a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "can precede" ;
+    rdfs:comment "Pattern can logically occur before another pattern in multi-stage attack sequence." ;
+    owl:inverseOf capec:canFollow .
+
+capec:canFollow a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "can follow" ;
+    rdfs:comment "Pattern can logically occur after another pattern in attack sequence." ;
+    owl:inverseOf capec:canPrecede .
+
+capec:canAlternateWith a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "can alternate with" ;
+    rdfs:comment "Pattern represents alternative characterization of another pattern (bidirectional)." ;
+    owl:inverseOf capec:canAlternateWith ;
+    rdf:type owl:SymmetricProperty .
+
+capec:peerOf a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "peer of" ;
+    rdfs:comment "Similar pattern without hierarchical or sequential relationship (bidirectional)." ;
+    owl:inverseOf capec:peerOf ;
+    rdf:type owl:SymmetricProperty .
+
+#################################################################
+# Object Properties - External Relationships
+#################################################################
+
+capec:exploitsCWE a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:Weakness ;
+    rdfs:label "exploits cwe" ;
+    rdfs:comment "CRITICAL: Attack pattern exploits one or more of these weaknesses (minimum 1 recommended)." ;
+    owl:inverseOf capec:exploitedByCAPEC .
+
+capec:exploitedByCAPEC a owl:ObjectProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "exploited by capec" ;
+    rdfs:comment "Inverse of exploitsCWE; weakness can be exploited by CAPEC patterns." ;
+    owl:inverseOf capec:exploitsCWE .
+
+capec:memberOfCategory a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range capec:Category ;
+    rdfs:label "member of category" ;
+    rdfs:comment "Pattern belongs to category (hierarchical grouping by effect/intent)." ;
+    owl:inverseOf capec:categoryHasMember .
+
+capec:categoryHasMember a owl:ObjectProperty ;
+    rdfs:domain capec:Category ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "category has member" ;
+    rdfs:comment "Category contains pattern members (inverse of memberOfCategory)." ;
+    owl:inverseOf capec:memberOfCategory .
+
+capec:memberOfView a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range capec:View ;
+    rdfs:label "member of view" ;
+    rdfs:comment "Pattern is perspective member of view." ;
+    owl:inverseOf capec:viewHasMember .
+
+capec:viewHasMember a owl:ObjectProperty ;
+    rdfs:domain capec:View ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "view has member" ;
+    rdfs:comment "View includes pattern members (inverse of memberOfView)." ;
+    owl:inverseOf capec:memberOfView .
+
+capec:mappedTo a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:label "mapped to" ;
+    rdfs:comment "Cross-framework mapping to external taxonomy (ATTACK, WASC, OWASP); includes mapping quality." .
+
+capec:hasExecutionStep a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range capec:ExecutionStep ;
+    rdfs:label "has execution step" ;
+    rdfs:comment "Ordered sequence of attack execution steps." .
+
+capec:hasSkillRequirement a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range capec:SkillRequirement ;
+    rdfs:label "has skill requirement" ;
+    rdfs:comment "Attacker skillset needed for successful attack." .
+
+capec:hasConsequence a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range capec:Consequence ;
+    rdfs:label "has consequence" ;
+    rdfs:comment "Security impacts of successful attack execution." .
+
+#################################################################
+# Datatype Properties - Core Identifiers
+#################################################################
+
+capec:capecId a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:integer ;
+    rdfs:label "capec id" ;
+    rdfs:comment "Unique globally static CAPEC identifier (integer); never reused even if deprecated." .
+
+capec:name a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    rdfs:comment "Capitalized descriptive title of attack pattern." .
+
+capec:categoryId a owl:DatatypeProperty ;
+    rdfs:domain capec:Category ;
+    rdfs:range xsd:integer ;
+    rdfs:label "category id" ;
+    rdfs:comment "Unique globally static category identifier; never reused." .
+
+capec:categoryName a owl:DatatypeProperty ;
+    rdfs:domain capec:Category ;
+    rdfs:range xsd:string ;
+    rdfs:label "category name" ;
+    rdfs:comment "Descriptive title of category." .
+
+capec:viewId a owl:DatatypeProperty ;
+    rdfs:domain capec:View ;
+    rdfs:range xsd:integer ;
+    rdfs:label "view id" ;
+    rdfs:comment "Unique globally static view identifier; never reused." .
+
+capec:viewName a owl:DatatypeProperty ;
+    rdfs:domain capec:View ;
+    rdfs:range xsd:string ;
+    rdfs:label "view name" ;
+    rdfs:comment "Descriptive title of view." .
+
+#################################################################
+# Datatype Properties - Pattern Metadata
+#################################################################
+
+capec:abstraction a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "abstraction" ;
+    rdfs:comment "Abstraction level hierarchy: meta (generalized), standard (focused), detailed (technology-specific)." .
+
+capec:status a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "status" ;
+    rdfs:comment "Lifecycle status: stable (production), usable (ready), draft/incomplete (not approved), deprecated/obsolete (historical)." .
+
+capec:description a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "description" ;
+    rdfs:comment "High-level 1-3 sentence overview including attack intent, technique, and impact." .
+
+capec:extendedDescription a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "extended description" ;
+    rdfs:comment "Additional context, rationale, and details beyond primary description." .
+
+capec:typicalSeverity a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "typical severity" ;
+    rdfs:comment "Average severity: veryHigh, high, medium, low, veryLow." .
+
+capec:attackLikelihood a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "attack likelihood" ;
+    rdfs:comment "Attack success probability: high, medium, low, unknown." .
+
+capec:alternateTerms a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "alternate terms" ;
+    rdfs:comment "Synonymous names and aliases for attack pattern." .
+
+capec:categoryStatus a owl:DatatypeProperty ;
+    rdfs:domain capec:Category ;
+    rdfs:range xsd:string ;
+    rdfs:label "category status" ;
+    rdfs:comment "Status: stable, usable, draft, incomplete, deprecated, obsolete." .
+
+capec:categorySummary a owl:DatatypeProperty ;
+    rdfs:domain capec:Category ;
+    rdfs:range xsd:string ;
+    rdfs:label "category summary" ;
+    rdfs:comment "Short key-points defining category." .
+
+capec:viewStatus a owl:DatatypeProperty ;
+    rdfs:domain capec:View ;
+    rdfs:range xsd:string ;
+    rdfs:label "view status" ;
+    rdfs:comment "Status: stable, usable, draft, incomplete, deprecated, obsolete." .
+
+capec:viewType a owl:DatatypeProperty ;
+    rdfs:domain capec:View ;
+    rdfs:range xsd:string ;
+    rdfs:label "view type" ;
+    rdfs:comment "View organization type: Graph, Explicit, or Implicit." .
+
+capec:viewObjective a owl:DatatypeProperty ;
+    rdfs:domain capec:View ;
+    rdfs:range xsd:string ;
+    rdfs:label "view objective" ;
+    rdfs:comment "Perspective or purpose of the view." .
+
+#################################################################
+# Datatype Properties - Execution Flow & Requirements
+#################################################################
+
+capec:stepNumber a owl:DatatypeProperty ;
+    rdfs:domain capec:ExecutionStep ;
+    rdfs:range xsd:integer ;
+    rdfs:label "step number" ;
+    rdfs:comment "Sequential number in execution flow." .
+
+capec:stepPhase a owl:DatatypeProperty ;
+    rdfs:domain capec:ExecutionStep ;
+    rdfs:range xsd:string ;
+    rdfs:label "step phase" ;
+    rdfs:comment "Attack phase: Explore (reconnaissance), Experiment (testing), Exploit (execution)." .
+
+capec:stepDescription a owl:DatatypeProperty ;
+    rdfs:domain capec:ExecutionStep ;
+    rdfs:range xsd:string ;
+    rdfs:label "step description" ;
+    rdfs:comment "Detailed description of execution step." .
+
+capec:prerequisites a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "prerequisites" ;
+    rdfs:comment "Conditions required for successful attack deployment." .
+
+capec:resourcesRequired a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "resources required" ;
+    rdfs:comment "Tools, infrastructure, access, or special knowledge required." .
+
+capec:indicators a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "indicators" ;
+    rdfs:comment "Observable behaviors, artifacts, network patterns indicating attack." .
+
+capec:mitigations a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "mitigations" ;
+    rdfs:comment "Design, implementation, operational strategies to prevent or detect." .
+
+capec:exampleInstances a owl:DatatypeProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range xsd:string ;
+    rdfs:label "example instances" ;
+    rdfs:comment "Real-world attacks, specific incidents, CVE examples." .
+
+#################################################################
+# Datatype Properties - Skill & Consequence Details
+#################################################################
+
+capec:skillName a owl:DatatypeProperty ;
+    rdfs:domain capec:SkillRequirement ;
+    rdfs:range xsd:string ;
+    rdfs:label "skill name" ;
+    rdfs:comment "Name of required attacker skill or knowledge." .
+
+capec:skillLevel a owl:DatatypeProperty ;
+    rdfs:domain capec:SkillRequirement ;
+    rdfs:range xsd:string ;
+    rdfs:label "skill level" ;
+    rdfs:comment "Level: High (expert), Medium (intermediate), Low (basic/widely available)." .
+
+capec:skillDescription a owl:DatatypeProperty ;
+    rdfs:domain capec:SkillRequirement ;
+    rdfs:range xsd:string ;
+    rdfs:label "skill description" ;
+    rdfs:comment "Detailed description of skill requirement." .
+
+capec:scope a owl:DatatypeProperty ;
+    rdfs:domain capec:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "scope" ;
+    rdfs:comment "Security scope: Confidentiality, Integrity, Availability, Access Control, Authentication, Authorization, Accountability, Non-Repudiation, Other." .
+
+capec:technicalImpact a owl:DatatypeProperty ;
+    rdfs:domain capec:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "technical impact" ;
+    rdfs:comment "Technical impact type: Modify Data, Read Data, Execute Commands, Gain Privileges, Bypass Protection, Hide Activities, etc." .
+
+capec:consequenceLikelihood a owl:DatatypeProperty ;
+    rdfs:domain capec:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "consequence likelihood" ;
+    rdfs:comment "Likelihood of this consequence: Always, Often, Sometimes, Rare, Unknown." .
+
+#################################################################
+# Datatype Properties - Cross-Taxonomy Mapping
+#################################################################
+
+capec:externalConceptId a owl:DatatypeProperty ;
+    rdfs:domain capec:mappedTo ;
+    rdfs:range xsd:string ;
+    rdfs:label "external concept id" ;
+    rdfs:comment "Identifier in external taxonomy (e.g., ATTACK-T1190, WASC-001)." .
+
+capec:externalFramework a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "external framework" ;
+    rdfs:comment "External framework name: ATT&CK, WASC, OWASP Attacks, etc." .
+
+capec:mappingQuality a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping quality" ;
+    rdfs:comment "Mapping fit: Exact, More Abstract, More Specific, Imprecise, Perspective." .
+
+capec:mappingNotes a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping notes" ;
+    rdfs:comment "Detailed notes explaining the correspondence or differences." .
+
+#################################################################
+# Cardinality & Uniqueness Constraints
+#################################################################
+
+kgcs:AttackPattern rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty capec:capecId ;
+      owl:cardinality "1"^^xsd:nonNegativeInteger
+    ] .
+
+kgcs:AttackPattern rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty capec:abstraction ;
+      owl:cardinality "1"^^xsd:nonNegativeInteger
+    ] .
+
+kgcs:AttackPattern rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty capec:status ;
+      owl:cardinality "1"^^xsd:nonNegativeInteger
+    ] .
+
+kgcs:AttackPattern rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty capec:exploitsCWE ;
+      owl:minQualifiedCardinality "0"^^xsd:nonNegativeInteger ;
+    owl:onClass kgcs:Weakness
+    ] .
+
+capec:Category rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty capec:categoryId ;
+      owl:cardinality "1"^^xsd:nonNegativeInteger
+    ] .
+
+capec:View rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty capec:viewId ;
+      owl:cardinality "1"^^xsd:nonNegativeInteger
+    ] .

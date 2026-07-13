@@ -1,0 +1,127 @@
+# KGCS ATT&CK SHACL Shapes v1.0
+#
+# Validates Technique, SubTechnique, and Tactic nodes against the ATT&CK
+# ontology (standards/attck/attck-ontology-v1.0.owl).
+#
+# Source standard: MITRE ATT&CK STIX JSON (enterprise, ics, mobile)
+# Enforcement level: STRICT (reject at ingest)
+#
+# KEY INVARIANTS:
+#   - Technique.attackId matches T\d{4} (not sub-technique format)
+#   - SubTechnique.attackId matches T\d{4}\.\d{3}
+#   - Tactic.attackId matches TA\d{4}
+#   - Every Technique belongs to ≥1 Tactic (enforced also in core.shacl.ttl)
+#   - Every SubTechnique has EXACTLY 1 SUBTECHNIQUE_OF parent
+#   - Revoked/deprecated objects are excluded during ETL — do not appear here
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+
+
+# ---------------------------------------------------------------------------
+# Technique node shape
+# ---------------------------------------------------------------------------
+
+attack:TechniqueShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Technique ;
+
+    # attackId: canonical ATT&CK ID — unique key; format T followed by 4 digits
+    sh:property [
+        sh:path attack:attackId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^T\\d{4}$" ;
+        sh:message "Technique.attackId must match T\\d{4} (e.g. T1059)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # name: human-readable technique name
+    sh:property [
+        sh:path attack:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Technique must have a name." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # PART_OF: at least one Tactic (duplicated from core.shacl.ttl for standalone validation)
+    sh:property [
+        sh:path attack:contains_by ;
+        sh:class attack:Tactic ;
+        sh:minCount 1 ;
+        sh:message "Technique must belong to at least one Tactic via PART_OF." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SubTechnique node shape
+# ---------------------------------------------------------------------------
+
+attack:SubTechniqueShape
+    a sh:NodeShape ;
+    sh:targetClass attack:SubTechnique ;
+
+    # attackId: format T followed by 4 digits, dot, 3 digits (e.g. T1059.001)
+    sh:property [
+        sh:path attack:attackId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^T\\d{4}\\.\\d{3}$" ;
+        sh:message "SubTechnique.attackId must match T\\d{4}.\\d{3} (e.g. T1059.001)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # name: human-readable sub-technique name
+    sh:property [
+        sh:path attack:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "SubTechnique must have a name." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # SUBTECHNIQUE_OF: exactly one parent Technique (cardinality invariant)
+    sh:property [
+        sh:path attack:subtechnique_of ;
+        sh:class attack:Technique ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SubTechnique must have exactly one SUBTECHNIQUE_OF parent Technique." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Tactic node shape
+# ---------------------------------------------------------------------------
+
+attack:TacticShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Tactic ;
+
+    # attackId: format TA followed by 4 digits (e.g. TA0001)
+    sh:property [
+        sh:path attack:attackId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^TA\\d{4}$" ;
+        sh:message "Tactic.attackId must match TA\\d{4} (e.g. TA0001)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # phaseName: ATT&CK shortname (e.g. initial-access, defense-evasion)
+    # Derived from x_mitre_shortname in STIX
+    sh:property [
+        sh:path attack:phaseName ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "Tactic must have a phaseName (ATT&CK shortname)." ;
+        sh:severity sh:Violation ;
+    ] .

@@ -1,0 +1,51 @@
+# KGCS CWE SHACL Shapes v1.0
+#
+# Validates Weakness nodes against the CWE ontology
+# (standards/cwe/cwe-ontology-v1.0.owl).
+#
+# Source standard: MITRE CWE XML catalog
+# Enforcement level: STRICT (reject at ingest)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cwe:   <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+
+
+# ---------------------------------------------------------------------------
+# Weakness node shape
+#
+# Every Weakness node must carry:
+#   - cweId: canonical identifier e.g. CWE-79 — unique key
+#   - abstraction: MITRE abstraction level from the fixed vocabulary
+#
+# The MITRE CWE abstraction hierarchy (most→least abstract):
+#   Pillar > Class > Base > Variant > Compound
+# ---------------------------------------------------------------------------
+
+cwe:WeaknessShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Weakness ;
+
+    # cweId: canonical identifier — primary unique key
+    # Pattern: CWE- followed by integer (no leading zeros required by MITRE)
+    sh:property [
+        sh:path cwe:cweId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CWE-\\d+$" ;
+        sh:message "Weakness must have exactly one cweId matching CWE-N." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # abstraction: MITRE classification level — fixed vocabulary
+    sh:property [
+        sh:path cwe:abstraction ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Pillar" "Class" "Base" "Variant" "Compound" ) ;
+        sh:message "Weakness.abstraction must be one of: Pillar, Class, Base, Variant, Compound." ;
+        sh:severity sh:Violation ;
+    ] .

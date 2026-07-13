@@ -1,0 +1,352 @@
+@prefix car: <http://www.motherhacker.me/kgcs/ontology/car#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix d3fend: <http://www.motherhacker.me/kgcs/ontology/d3fend#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+car:CarOntology a owl:Ontology ;
+    rdfs:label "KGCS CAR Ontology v1.0" ;
+    rdfs:comment "MITRE Cyber Analytics Repository (CAR) ontology defining detection analytics, data models, and sensor capabilities for identifying adversary behavior aligned with ATT&CK techniques and D3FEND defenses." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+car:Analytic a owl:Class ;
+    rdfs:subClassOf kgcs:DetectionAnalytic ;
+    rdfs:label "CAR Analytic" ;
+    rdfs:comment "Detection analytic from MITRE CAR (Cyber Analytics Repository) indexed by CAR-YYYY-MM-NNN identifier. Links to ATT&CK techniques for offensive coverage and D3FEND techniques for defensive alignment." ;
+    owl:disjointWith car:DataModel , car:Sensor , car:DataModelAction , car:DataModelField , car:SensorMapping , car:CoverageBucket .
+
+car:DataModel a owl:Class ;
+    rdfs:subClassOf kgcs:DetectionAnalytic ;
+    rdfs:label "CAR Data Model Entity" ;
+    rdfs:comment "Cyber observable entity type definition from MITRE CAR representing detection data points (Process, File, Flow, Registry, Driver, etc.) with associated actions and fields." ;
+    owl:disjointWith car:Analytic , car:Sensor , car:DataModelAction , car:DataModelField , car:SensorMapping , car:CoverageBucket .
+
+car:DataModelAction a owl:Class ;
+    rdfs:label "Data Model Action" ;
+    rdfs:comment "Action that can be performed on a CAR data model entity (create, terminate, modify, access, load, etc.), defining observable behavioral events." .
+
+car:DataModelField a owl:Class ;
+    rdfs:label "Data Model Field" ;
+    rdfs:comment "Observable property or attribute of a CAR data model entity (pid, fqdn, command_line, image_path, etc.), representing specific detection data points." .
+
+car:Sensor a owl:Class ;
+    rdfs:subClassOf kgcs:DetectionAnalytic ;
+    rdfs:label "CAR Sensor" ;
+    rdfs:comment "Data source sensor capability definition from MITRE CAR (Sysmon, osquery, auditd, etc.) showing event-to-data-model mappings for detection data collection." ;
+    owl:disjointWith car:Analytic , car:DataModel , car:DataModelAction , car:DataModelField , car:SensorMapping , car:CoverageBucket .
+
+car:SensorMapping a owl:Class ;
+    rdfs:label "Sensor Mapping" ;
+    rdfs:comment "Event-to-data-model mapping from a sensor, showing how sensor events map to CAR data model entities, actions, and fields." .
+
+car:CoverageBucket a owl:Class ;
+    rdfs:label "Coverage Bucket" ;
+    rdfs:comment "ATT&CK technique/tactic coverage specification within a CAR analytic, capturing technique ID, associated tactics, optional subtechniques, and coverage effectiveness level." .
+
+#################################################################
+# Object Properties
+#################################################################
+
+car:coverage_technique a owl:ObjectProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range attack:Technique ;
+    rdfs:label "covers technique" ;
+    rdfs:comment "Relationship indicating this CAR analytic provides detection coverage for this ATT&CK technique (required: minimum 1 per analytic)." ;
+    owl:inverseOf car:detected_by_analytic .
+
+car:detected_by_analytic a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range car:Analytic ;
+    rdfs:label "detected by analytic" ;
+    rdfs:comment "Inverse of car:coverage_technique; this ATT&CK technique is detected by these CAR analytics." ;
+    owl:inverseOf car:coverage_technique .
+
+car:coverage_tactic a owl:ObjectProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range attack:Tactic ;
+    rdfs:label "covers tactic" ;
+    rdfs:comment "Relationship indicating this CAR analytic provides coverage for this ATT&CK tactic (derived from technique-to-tactic relationships)." ;
+    owl:inverseOf car:tactic_covered_by .
+
+car:tactic_covered_by a owl:ObjectProperty ;
+    rdfs:domain attack:Tactic ;
+    rdfs:range car:Analytic ;
+    rdfs:label "tactic covered by" ;
+    rdfs:comment "Inverse of car:coverage_tactic; this ATT&CK tactic is covered by these CAR analytics (optional)." ;
+    owl:inverseOf car:coverage_tactic .
+
+car:has_d3fend_mapping a owl:ObjectProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "has D3FEND mapping" ;
+    rdfs:comment "Relationship indicating this CAR analytic detects or supports implementation of this D3FEND defensive technique (enables defensive-offensive alignment)." ;
+    owl:inverseOf car:supported_by_analytic .
+
+car:supported_by_analytic a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range car:Analytic ;
+    rdfs:label "supported by analytic" ;
+    rdfs:comment "Inverse of car:has_d3fend_mapping; this D3FEND defensive technique is supported by these CAR analytics." ;
+    owl:inverseOf car:has_d3fend_mapping .
+
+car:sensor_provides a owl:ObjectProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range car:DataModel ;
+    rdfs:label "sensor provides" ;
+    rdfs:comment "Relationship indicating this CAR sensor captures data about this data model entity type (required: minimum 1 per sensor)." ;
+    owl:inverseOf car:data_collected_by .
+
+car:data_collected_by a owl:ObjectProperty ;
+    rdfs:domain car:DataModel ;
+    rdfs:range car:Sensor ;
+    rdfs:label "data collected by" ;
+    rdfs:comment "Inverse of car:sensor_provides; this data model is collected data by these sensors (optional, 0+ per data model)." ;
+    owl:inverseOf car:sensor_provides .
+
+car:uses_sensor a owl:ObjectProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range car:Sensor ;
+    rdfs:label "uses sensor" ;
+    rdfs:comment "Relationship indicating this CAR analytic requires data from this sensor (optional, 0+ per analytic)." ;
+    owl:inverseOf car:sensor_used_by .
+
+car:sensor_used_by a owl:ObjectProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range car:Analytic ;
+    rdfs:label "sensor used by" ;
+    rdfs:comment "Inverse of car:uses_sensor; this sensor is used by these CAR analytics (optional, 0+ per sensor)." ;
+    owl:inverseOf car:uses_sensor .
+
+car:analyzes_observable a owl:ObjectProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range car:DataModel ;
+    rdfs:label "analyzes observable" ;
+    rdfs:comment "Relationship indicating this CAR analytic analyzes data about this observable/data model type (optional, 0+ per analytic)." ;
+    owl:inverseOf car:analysed_by_analytic .
+
+car:analysed_by_analytic a owl:ObjectProperty ;
+    rdfs:domain car:DataModel ;
+    rdfs:range car:Analytic ;
+    rdfs:label "analysed by analytic" ;
+    rdfs:comment "Inverse of car:analyzes_observable; this data model is analyzed by these CAR analytics (optional, 0+ per data model)." ;
+    owl:inverseOf car:analyzes_observable .
+
+car:hasAction a owl:ObjectProperty ;
+    rdfs:domain car:DataModel ;
+    rdfs:range car:DataModelAction ;
+    rdfs:label "has action" ;
+    rdfs:comment "Relationship indicating this data model entity can perform this action (required: minimum 1 per data model)." .
+
+car:hasField a owl:ObjectProperty ;
+    rdfs:domain car:DataModel ;
+    rdfs:range car:DataModelField ;
+    rdfs:label "has field" ;
+    rdfs:comment "Relationship indicating this data model entity has this observable field/attribute (required: minimum 1 per data model)." .
+
+car:hasMapping a owl:ObjectProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range car:SensorMapping ;
+    rdfs:label "has mapping" ;
+    rdfs:comment "Relationship indicating this sensor has this event-to-data-model mapping definition (required: minimum 1 per sensor)." .
+
+car:coverage a owl:ObjectProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range car:CoverageBucket ;
+    rdfs:label "coverage" ;
+    rdfs:comment "Relationship indicating this analytic has this ATT&CK coverage bucket (required: minimum 1 per analytic)." .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+car:analyticId a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "analytic id" ;
+    rdfs:comment "Unique CAR analytic identifier in format CAR-YYYY-MM-NNN (e.g., CAR-2013-01-002), globally unique and never reused." .
+
+car:submissionDate a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "submission date" ;
+    rdfs:comment "Submission date of CAR analytic in YYYY/MM/DD format (e.g., 2013/01/25)." .
+
+car:informationDomain a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "information domain" ;
+    rdfs:comment "Primary information domain covered by this analytic: Network, Host, File, Object, Launched Script, Process, User, or Cloud." .
+
+car:applicablePlatforms a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "applicable platforms" ;
+    rdfs:comment "Target platform(s) for this analytic (Windows, Linux, macOS, Kubernetes, AWS, Azure, etc.; or 'N/A' if platform-independent)." .
+
+car:analyticSubtypes a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "analytic subtypes" ;
+    rdfs:comment "Analytic subtype/category classifications (e.g., PCAP, Process, Registry, Event Log) indicating detection data type." .
+
+car:analyticTypes a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "analytic types" ;
+    rdfs:comment "Analytic type classifications (Situational Awareness, Detection, Evasion Detection, Threat Hunting) indicating detection strategy." .
+
+car:contributors a owl:DatatypeProperty ;
+    rdfs:domain car:Analytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "contributors" ;
+    rdfs:comment "Contributors who developed or maintained this CAR analytic (required: minimum 1)." .
+
+car:datamodelName a owl:DatatypeProperty ;
+    rdfs:domain car:DataModel ;
+    rdfs:range xsd:string ;
+    rdfs:label "data model name" ;
+    rdfs:comment "Name of the CAR data model entity type (Process, File, Flow, Registry, Driver, HTTP, Email, Module, Service, Authentication)." .
+
+car:sensorName a owl:DatatypeProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range xsd:string ;
+    rdfs:label "sensor name" ;
+    rdfs:comment "Name of the data source sensor or platform (Sysmon, osquery, auditd, Autoruns, WmiTrace, ETW, AWS CloudTrail, Azure Monitor, etc.)." .
+
+car:sensorVersion a owl:DatatypeProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range xsd:string ;
+    rdfs:label "sensor version" ;
+    rdfs:comment "Version of the sensor (e.g., 11.0, 4.6.0, 13.98) matching official source documentation." .
+
+car:sensorDeveloper a owl:DatatypeProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range xsd:string ;
+    rdfs:label "sensor developer" ;
+    rdfs:comment "Developer organization responsible for the sensor (Microsoft, Osquery Foundation, Linux Foundation, AWS, Azure, etc.)." .
+
+car:sensorUrl a owl:DatatypeProperty ;
+    rdfs:domain car:Sensor ;
+    rdfs:range xsd:anyURI ;
+    rdfs:label "sensor url" ;
+    rdfs:comment "URL to official sensor documentation and project homepage." .
+
+car:coverageLevel a owl:DatatypeProperty ;
+    rdfs:domain car:CoverageBucket ;
+    rdfs:range xsd:string ;
+    rdfs:label "coverage level" ;
+    rdfs:comment "Detection coverage effectiveness level for this technique: Low (minimal coverage), Moderate (reasonable coverage with gaps), or High (comprehensive coverage)." .
+
+car:coverageTechnique a owl:DatatypeProperty ;
+    rdfs:domain car:CoverageBucket ;
+    rdfs:range xsd:string ;
+    rdfs:label "coverage technique" ;
+    rdfs:comment "ATT&CK technique ID from coverage entry (pattern T[0-9]{4}, e.g., T1039) being detected by parent analytic." .
+
+car:coverageTactics a owl:DatatypeProperty ;
+    rdfs:domain car:CoverageBucket ;
+    rdfs:range xsd:string ;
+    rdfs:label "coverage tactics" ;
+    rdfs:comment "ATT&CK tactic ID(s) from coverage entry (pattern TA[0-9]{4}, e.g., TA0009) associated with the technique." .
+
+car:coverageSubtechniques a owl:DatatypeProperty ;
+    rdfs:domain car:CoverageBucket ;
+    rdfs:range xsd:string ;
+    rdfs:label "coverage subtechniques" ;
+    rdfs:comment "ATT&CK subtechnique ID(s) from coverage entry (pattern T[0-9]{4}\\.[0-9]{3}, e.g., T1021.002) if applicable." .
+
+car:actionName a owl:DatatypeProperty ;
+    rdfs:domain car:DataModelAction ;
+    rdfs:range xsd:string ;
+    rdfs:label "action name" ;
+    rdfs:comment "Name of the action performable on a data model entity (create, terminate, access, load, modify, delete, start, message, timestomp, execute, etc.)." .
+
+car:fieldName a owl:DatatypeProperty ;
+    rdfs:domain car:DataModelField ;
+    rdfs:range xsd:string ;
+    rdfs:label "field name" ;
+    rdfs:comment "Name of an observable field or attribute available in a data model entity (fqdn, pid, command_line, image_path, etc.)." .
+
+car:fieldExample a owl:DatatypeProperty ;
+    rdfs:domain car:DataModelField ;
+    rdfs:range xsd:string ;
+    rdfs:label "field example" ;
+    rdfs:comment "Example value demonstrating this field (e.g., 'C:\\\\path\\\\to\\\\example.exe' for image_path field)." .
+
+car:mappingObject a owl:DatatypeProperty ;
+    rdfs:domain car:SensorMapping ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping object" ;
+    rdfs:comment "CAR data model entity being mapped by this sensor (file, driver, flow, process, registry, etc.)." .
+
+car:mappingAction a owl:DatatypeProperty ;
+    rdfs:domain car:SensorMapping ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping action" ;
+    rdfs:comment "Action on the data model object mapped by this sensor event (create, load, start, send, modify, etc.)." .
+
+car:mappingNotes a owl:DatatypeProperty ;
+    rdfs:domain car:SensorMapping ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping notes" ;
+    rdfs:comment "Implementation notes explaining this sensor mapping (e.g., 'Mapped to Sysmon Event ID 11: SYSMON_FILE_CREATE')." .
+
+car:mappingFields a owl:DatatypeProperty ;
+    rdfs:domain car:SensorMapping ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping fields" ;
+    rdfs:comment "Data model fields populated by this sensor event (e.g., 'fqdn, image_path, pid, file_path, creation_time')." .
+
+#################################################################
+# Cardinality Constraints
+#################################################################
+
+car:Analytic rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty car:coverage_technique ;
+      owl:minCardinality 1 ] .
+
+car:DataModel rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty car:hasAction ;
+      owl:minCardinality 1 ] ,
+    [ a owl:Restriction ;
+      owl:onProperty car:hasField ;
+      owl:minCardinality 1 ] .
+
+car:Sensor rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty car:sensor_provides ;
+      owl:minCardinality 1 ] ,
+    [ a owl:Restriction ;
+      owl:onProperty car:hasMapping ;
+      owl:minCardinality 1 ] .
+
+car:CoverageBucket rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty car:coverageTechnique ;
+      owl:cardinality 1 ] ,
+    [ a owl:Restriction ;
+      owl:onProperty car:coverageTactics ;
+      owl:minCardinality 1 ] .
+
+#################################################################
+# Disjointness Constraints
+#################################################################
+
+car:DataModelAction owl:disjointWith car:DataModelField , car:SensorMapping , car:CoverageBucket .
+car:DataModelField owl:disjointWith car:SensorMapping , car:CoverageBucket .
+car:SensorMapping owl:disjointWith car:CoverageBucket .

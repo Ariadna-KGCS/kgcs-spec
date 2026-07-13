@@ -1,0 +1,312 @@
+@prefix d3fend: <http://www.motherhacker.me/kgcs/ontology/d3fend#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix cwe: <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec: <http://www.motherhacker.me/kgcs/ontology/capec#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+d3fend:D3FENDOntology a owl:Ontology ;
+    rdfs:label "KGCS D3FEND Ontology v1.0" ;
+    rdfs:comment "MITRE D3FEND defensive countermeasure knowledge graph integration via passthrough architecture. Aligns 7 defensive tactics with core concepts." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+d3fend:DefensiveTactic a owl:Class ;
+    rdfs:label "Defensive Tactic" ;
+    rdfs:comment "Strategic defensive objective: Detect, Deceive, Evict, Harden, Isolate, Model, Restore. Categorizes defensive techniques." ;
+    owl:disjointWith d3fend:Procedure, d3fend:Capability, d3fend:PrerequisiteCondition .
+
+d3fend:Procedure a owl:Class ;
+    rdfs:label "Procedure" ;
+    rdfs:comment "Concrete implementation steps for executing a defensive technique; defines how a technique is deployed." ;
+    owl:disjointWith d3fend:DefensiveTactic, d3fend:Capability, d3fend:PrerequisiteCondition .
+
+d3fend:Capability a owl:Class ;
+    rdfs:label "Capability" ;
+    rdfs:comment "Required organizational capability (people, tools, process maturity) for effective defensive technique deployment." ;
+    owl:disjointWith d3fend:DefensiveTactic, d3fend:Procedure, d3fend:PrerequisiteCondition .
+
+d3fend:PrerequisiteCondition a owl:Class ;
+    rdfs:label "Prerequisite Condition" ;
+    rdfs:comment "Contextual condition or environmental state required for defensive technique to be effective." ;
+    owl:disjointWith d3fend:DefensiveTactic, d3fend:Procedure, d3fend:Capability .
+
+#################################################################
+# Object Properties - Defensive-to-Offensive Mitigation
+#################################################################
+
+d3fend:mitigates_technique a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range attack:Technique ;
+    rdfs:label "mitigates technique" ;
+    rdfs:comment "Defensive technique mitigates or counters ATT&CK offensive technique. Critical relationship for defensive coverage analysis." ;
+    owl:inverseOf d3fend:mitigated_by_technique .
+
+d3fend:mitigated_by_technique a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "mitigated by technique" ;
+    rdfs:comment "Inverse of mitigates_technique; ATT&CK technique is countered by defensive technique." ;
+    owl:inverseOf d3fend:mitigates_technique .
+
+d3fend:mitigates_tactic a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range attack:Tactic ;
+    rdfs:label "mitigates tactic" ;
+    rdfs:comment "Defensive technique helps counter ATT&CK offensive tactic (indicates coverage of multiple techniques in same tactic)." ;
+    owl:inverseOf d3fend:mitigated_by_tactic .
+
+d3fend:mitigated_by_tactic a owl:ObjectProperty ;
+    rdfs:domain attack:Tactic ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "mitigated by tactic" ;
+    rdfs:comment "Inverse of mitigates_tactic; ATT&CK tactic has defensive coverage via technique." ;
+    owl:inverseOf d3fend:mitigates_tactic .
+
+d3fend:counters_attack_pattern a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "counters attack pattern" ;
+    rdfs:comment "Defensive technique counters CAPEC attack pattern (methodology-level defense)." ;
+    owl:inverseOf d3fend:countered_by_technique .
+
+d3fend:countered_by_technique a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "countered by technique" ;
+    rdfs:comment "Inverse of counters_attack_pattern; CAPEC pattern is defended against by technique." ;
+    owl:inverseOf d3fend:counters_attack_pattern .
+
+#################################################################
+# Object Properties - Tactical Organization
+#################################################################
+
+d3fend:belongs_to_tactic a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range d3fend:DefensiveTactic ;
+    rdfs:label "belongs to tactic" ;
+    rdfs:comment "Defensive technique belongs to exactly 1 of 7 strategic D3FEND tactics (Functional Property)." ;
+    rdf:type owl:FunctionalProperty ;
+    owl:inverseOf d3fend:tactic_has_member .
+
+d3fend:tactic_has_member a owl:ObjectProperty ;
+    rdfs:domain d3fend:DefensiveTactic ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "tactic has member" ;
+    rdfs:comment "Inverse of belongs_to_tactic; tactic groups multiple defensive techniques." ;
+    owl:inverseOf d3fend:belongs_to_tactic .
+
+#################################################################
+# Object Properties - Implementation
+#################################################################
+
+d3fend:implemented_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range d3fend:Procedure ;
+    rdfs:label "implemented by" ;
+    rdfs:comment "Defensive technique is executed via concrete procedures/playbooks." ;
+    owl:inverseOf d3fend:implements .
+
+d3fend:implements a owl:ObjectProperty ;
+    rdfs:domain d3fend:Procedure ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "implements" ;
+    rdfs:comment "Procedure implements exactly 1 defensive technique (Functional Property)." ;
+    rdf:type owl:FunctionalProperty ;
+    owl:inverseOf d3fend:implemented_by .
+
+#################################################################
+# Object Properties - Capability and Prerequisite
+#################################################################
+
+d3fend:requires_capability a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range d3fend:Capability ;
+    rdfs:label "requires capability" ;
+    rdfs:comment "Defensive technique requires specific organizational capability (people, tools, process maturity)." ;
+    owl:inverseOf d3fend:capability_enables .
+
+d3fend:capability_enables a owl:ObjectProperty ;
+    rdfs:domain d3fend:Capability ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "capability enables" ;
+    rdfs:comment "Inverse of requires_capability; organization's capability enables technique deployment." ;
+    owl:inverseOf d3fend:requires_capability .
+
+d3fend:requires_condition a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range d3fend:PrerequisiteCondition ;
+    rdfs:label "requires condition" ;
+    rdfs:comment "Defensive technique requires contextual condition for effectiveness." ;
+    owl:inverseOf d3fend:condition_enables_technique .
+
+d3fend:condition_enables_technique a owl:ObjectProperty ;
+    rdfs:domain d3fend:PrerequisiteCondition ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "condition enables technique" ;
+    rdfs:comment "Inverse of requires_condition; condition must hold for technique viability." ;
+    owl:inverseOf d3fend:requires_condition .
+
+#################################################################
+# Object Properties - Cross-Reference (Optional)
+#################################################################
+
+d3fend:references_cwe a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range kgcs:Weakness ;
+    rdfs:label "references cwe" ;
+    rdfs:comment "Defensive technique addresses specific CWE weaknesses." ;
+    owl:inverseOf d3fend:cwe_addressed_by .
+
+d3fend:cwe_addressed_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "cwe addressed by" ;
+    rdfs:comment "Inverse of references_cwe; CWE weakness is mitigated by defensive technique." ;
+    owl:inverseOf d3fend:references_cwe .
+
+d3fend:references_capec a owl:ObjectProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range kgcs:AttackPattern ;
+    rdfs:label "references capec" ;
+    rdfs:comment "Defensive technique links to CAPEC attack patterns it can mitigate." ;
+    owl:inverseOf d3fend:capec_referenced_by .
+
+d3fend:capec_referenced_by a owl:ObjectProperty ;
+    rdfs:domain kgcs:AttackPattern ;
+    rdfs:range kgcs:DefensiveTechnique ;
+    rdfs:label "capec referenced by" ;
+    rdfs:comment "Inverse of references_capec; CAPEC pattern referenced by defensive technique." ;
+    owl:inverseOf d3fend:references_capec .
+
+#################################################################
+# Datatype Properties - Identifiers and Names
+#################################################################
+
+d3fend:d3fendId a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range xsd:string ;
+    rdfs:label "d3fend id" ;
+    rdfs:comment "Canonical D3FEND identifier from official OWL (e.g., D3FEND-AP001)." .
+
+d3fend:tacticId a owl:DatatypeProperty ;
+    rdfs:domain d3fend:DefensiveTactic ;
+    rdfs:range xsd:string ;
+    rdfs:label "tactic id" ;
+    rdfs:comment "Identifier for defensive tactic (Detect, Deceive, Evict, Harden, Isolate, Model, Restore)." .
+
+d3fend:tacticName a owl:DatatypeProperty ;
+    rdfs:domain d3fend:DefensiveTactic ;
+    rdfs:range xsd:string ;
+    rdfs:label "tactic name" ;
+    rdfs:comment "Name of defensive tactic (one of 7 strategic objectives)." .
+
+d3fend:procedureId a owl:DatatypeProperty ;
+    rdfs:domain d3fend:Procedure ;
+    rdfs:range xsd:string ;
+    rdfs:label "procedure id" ;
+    rdfs:comment "Unique identifier for procedure (e.g., AP-1-P-1, AP-1-P-2)." .
+
+d3fend:capabilityId a owl:DatatypeProperty ;
+    rdfs:domain d3fend:Capability ;
+    rdfs:range xsd:string ;
+    rdfs:label "capability id" ;
+    rdfs:comment "Unique identifier for organizational capability." .
+
+d3fend:conditionId a owl:DatatypeProperty ;
+    rdfs:domain d3fend:PrerequisiteCondition ;
+    rdfs:range xsd:string ;
+    rdfs:label "condition id" ;
+    rdfs:comment "Unique identifier for prerequisite condition." .
+
+#################################################################
+# Datatype Properties - Descriptions and Implementation Details
+#################################################################
+
+d3fend:procedureSteps a owl:DatatypeProperty ;
+    rdfs:domain d3fend:Procedure ;
+    rdfs:range xsd:string ;
+    rdfs:label "procedure steps" ;
+    rdfs:comment "Text description of concrete implementation steps/playbook for executing technique." .
+
+d3fend:conditionDescription a owl:DatatypeProperty ;
+    rdfs:domain d3fend:PrerequisiteCondition ;
+    rdfs:range xsd:string ;
+    rdfs:label "condition description" ;
+    rdfs:comment "Description of contextual condition required for technique effectiveness." .
+
+d3fend:capabilityDescription a owl:DatatypeProperty ;
+    rdfs:domain d3fend:Capability ;
+    rdfs:range xsd:string ;
+    rdfs:label "capability description" ;
+    rdfs:comment "Description of organizational capability (people, tools, process maturity)." .
+
+#################################################################
+# Datatype Properties - Capability Level and Status
+#################################################################
+
+d3fend:capabilityLevel a owl:DatatypeProperty ;
+    rdfs:domain d3fend:Capability ;
+    rdfs:range xsd:string ;
+    rdfs:label "capability level" ;
+    rdfs:comment "Organizational capability level: LOW (minimal investment), MEDIUM (moderate), HIGH (significant specialized expertise)." .
+
+d3fend:applicablePlatforms a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range xsd:string ;
+    rdfs:label "applicable platforms" ;
+    rdfs:comment "Platforms/operating systems where defensive technique is applicable (Windows, Linux, macOS, etc.)." .
+
+d3fend:status a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range xsd:string ;
+    rdfs:label "status" ;
+    rdfs:comment "Status/maturity: stable (production-ready), beta (testing), deprecated (obsolete)." .
+
+d3fend:version a owl:DatatypeProperty ;
+    rdfs:domain d3fend:D3FENDOntology ;
+    rdfs:range xsd:string ;
+    rdfs:label "version" ;
+    rdfs:comment "D3FEND version reference (e.g., v1.3.0, 2025-12-16)." .
+
+d3fend:references a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range xsd:string ;
+    rdfs:label "references" ;
+    rdfs:comment "External reference links, citations, or documentation URLs." .
+
+#################################################################
+# Cardinality Constraints
+#################################################################
+
+kgcs:DefensiveTechnique rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty d3fend:belongs_to_tactic ;
+      owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass d3fend:DefensiveTactic
+    ] .
+
+d3fend:Procedure rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty d3fend:implements ;
+      owl:qualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass kgcs:DefensiveTechnique
+    ] .
+
+kgcs:DefensiveTechnique rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty d3fend:mitigates_technique ;
+      owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass attack:Technique
+    ] .

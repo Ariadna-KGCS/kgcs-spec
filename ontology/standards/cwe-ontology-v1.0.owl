@@ -1,0 +1,31 @@
+@prefix cwe: <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+cwe:CWEOntology a owl:Ontology ;
+    rdfs:label "KGCS CWE Ontology v1.0" ;
+    rdfs:comment "CWE weakness identifiers and abstraction fields for standards-aligned root-cause modeling." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+cwe:cweId a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "cwe id" ;
+    rdfs:comment "Canonical CWE identifier from MITRE CWE catalog." .
+
+cwe:abstraction a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "abstraction" ;
+    rdfs:comment "CWE abstraction level (e.g., Pillar, Class, Base)." .

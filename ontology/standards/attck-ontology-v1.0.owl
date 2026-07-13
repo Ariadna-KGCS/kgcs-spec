@@ -1,0 +1,248 @@
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+attack:AttackOntology a owl:Ontology ;
+    rdfs:label "KGCS ATT&CK Ontology v1.0" ;
+    rdfs:comment "MITRE ATT&CK framework entities, tactics, techniques, and detection strategies with STIX 2.1 alignment." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+attack:Tactic a owl:Class ;
+    rdfs:label "Tactic" ;
+    rdfs:comment "ATT&CK tactic representing a kill chain phase or objective (e.g., Initial Access, Execution, Persistence)." ;
+    owl:disjointWith attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:Technique a owl:Class ;
+    rdfs:label "Technique" ;
+    rdfs:comment "ATT&CK technique or attack pattern used by adversaries (primary object with ID Txxxx or subtechnique Txxxx.yyy)." ;
+    owl:disjointWith attack:Tactic , attack:Group , attack:Software , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:SubTechnique a owl:Class ;
+    rdfs:label "Sub-Technique" ;
+    rdfs:comment "Child technique of a parent Technique, representing a more specific attack method." ;
+    rdfs:subClassOf attack:Technique ;
+    owl:disjointWith attack:Tactic , attack:Group , attack:Software , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:Group a owl:Class ;
+    rdfs:label "Group" ;
+    rdfs:comment "ATT&CK intrusion set or threat actor group using techniques and tools (ID Gxxxx)." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:Software a owl:Class ;
+    rdfs:label "Software" ;
+    rdfs:comment "ATT&CK malware or tool used in attacks (ID Sxxxx for tools, Mxxxx for malware)." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:DataSource a owl:Class ;
+    rdfs:label "Data Source" ;
+    rdfs:comment "ATT&CK data source for detection (ID DSxxxx), containing one or more data components." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:DataComponent a owl:Class ;
+    rdfs:label "Data Component" ;
+    rdfs:comment "ATT&CK data component within a data source (ID DCxxxx), representing specific detection data point." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:Asset a owl:Class ;
+    rdfs:label "Asset" ;
+    rdfs:comment "ATT&CK asset or target system type (ID Axxxx) that can be targeted by techniques." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:DetectionStrategy , attack:Analytic , attack:LogSource .
+
+attack:DetectionStrategy a owl:Class ;
+    rdfs:label "Detection Strategy" ;
+    rdfs:comment "ATT&CK strategic detection approach (ID DETxxxx) for detecting attack behaviors." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:Analytic , attack:LogSource .
+
+attack:Analytic a owl:Class ;
+    rdfs:label "Analytic" ;
+    rdfs:comment "ATT&CK detection analytic (ID ANxxxx) representing specific detectable behavior pattern." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:LogSource .
+
+attack:LogSource a owl:Class ;
+    rdfs:label "Log Source" ;
+    rdfs:comment "ATT&CK log source definition (ID LSxxxx) representing specific type of log or event source." ;
+    owl:disjointWith attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic .
+
+#################################################################
+# Object Properties
+#################################################################
+
+attack:contains a owl:ObjectProperty ;
+    rdfs:domain attack:Tactic ;
+    rdfs:range attack:Technique ;
+    rdfs:label "contains" ;
+    rdfs:comment "Relationship between a Tactic and its Techniques (from kill_chain_phases.phase_name in STIX)." ;
+    owl:inverseOf attack:contains_by .
+
+attack:contains_by a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range attack:Tactic ;
+    rdfs:label "contained by" ;
+    rdfs:comment "Inverse of attack:contains; Technique belongs to Tactic." ;
+    owl:inverseOf attack:contains .
+
+attack:subtechnique_of a owl:ObjectProperty ;
+    rdfs:domain attack:SubTechnique ;
+    rdfs:range attack:Technique ;
+    rdfs:label "subtechnique of" ;
+    rdfs:comment "Relationship indicating SubTechnique is a child of parent Technique." ;
+    rdf:type owl:FunctionalProperty ;
+    owl:inverseOf attack:subtechnique_parent .
+
+attack:subtechnique_parent a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range attack:SubTechnique ;
+    rdfs:label "subtechnique parent" ;
+    rdfs:comment "Inverse of attack:subtechnique_of; parent Technique having SubTechnique children." ;
+    owl:inverseOf attack:subtechnique_of .
+
+attack:uses a owl:ObjectProperty ;
+    rdfs:domain attack:Group , attack:Software ;
+    rdfs:range attack:Technique ;
+    rdfs:label "uses" ;
+    rdfs:comment "Relationship indicating Group or Software uses a Technique in their operations." ;
+    owl:inverseOf attack:used_by .
+
+attack:used_by a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range attack:Group , attack:Software ;
+    rdfs:label "used by" ;
+    rdfs:comment "Inverse of attack:uses; Technique is employed by Groups and Software." ;
+    owl:inverseOf attack:uses .
+
+attack:detects a owl:ObjectProperty ;
+    rdfs:domain attack:DataComponent ;
+    rdfs:range attack:Technique ;
+    rdfs:label "detects" ;
+    rdfs:comment "Relationship indicating DataComponent can detect instances of a Technique." ;
+    owl:inverseOf attack:detected_by .
+
+attack:detected_by a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range attack:DataComponent ;
+    rdfs:label "detected by" ;
+    rdfs:comment "Inverse of attack:detects; Technique can be detected by DataComponent." ;
+    owl:inverseOf attack:detects .
+
+attack:targets a owl:ObjectProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range attack:Asset ;
+    rdfs:label "targets" ;
+    rdfs:comment "Relationship indicating Technique can target specific Asset types." ;
+    owl:inverseOf attack:targeted_by .
+
+attack:targeted_by a owl:ObjectProperty ;
+    rdfs:domain attack:Asset ;
+    rdfs:range attack:Technique ;
+    rdfs:label "targeted by" ;
+    rdfs:comment "Inverse of attack:targets; Asset type can be targeted by Techniques." ;
+    owl:inverseOf attack:targets .
+
+attack:references a owl:ObjectProperty ;
+    rdfs:domain attack:DataSource , attack:DataComponent ;
+    rdfs:range attack:Analytic ;
+    rdfs:label "references" ;
+    rdfs:comment "Relationship indicating DataSource/DataComponent references specific detection Analytic." ;
+    owl:inverseOf attack:referenced_by .
+
+attack:referenced_by a owl:ObjectProperty ;
+    rdfs:domain attack:Analytic ;
+    rdfs:range attack:DataSource , attack:DataComponent ;
+    rdfs:label "referenced by" ;
+    rdfs:comment "Inverse of attack:references; Analytic is referenced by DataSources/Components." ;
+    owl:inverseOf attack:references .
+
+attack:belongsToDomain a owl:ObjectProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource ;
+    rdfs:range xsd:string ;
+    rdfs:label "belongs to domain" ;
+    rdfs:comment "Indicates which ATT&CK domain(s) an entity belongs to (enterprise-attack, mobile-attack, ics-attack, etc.)." .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+attack:attackId a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:SubTechnique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource ;
+    rdfs:range xsd:string ;
+    rdfs:label "attack id" ;
+    rdfs:comment "Canonical ATT&CK identifier from x_mitre_id in STIX (TAxxxx, Txxxx, Txxxx.yyy, Gxxxx, Sxxxx, Mxxxx, DSxxxx, DCxxxx, Axxxx, DETxxxx, ANxxxx, LSxxxx)." .
+
+attack:tacticType a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic ;
+    rdfs:range xsd:string ;
+    rdfs:label "tactic type" ;
+    rdfs:comment "Tactic type from x_mitre_tactic_type (primarily for mobile domain tactics)." .
+
+attack:isSubtechnique a owl:DatatypeProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "is subtechnique" ;
+    rdfs:comment "Boolean flag indicating if technique is a subtechnique from x_mitre_is_subtechnique." .
+
+attack:platform a owl:DatatypeProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range xsd:string ;
+    rdfs:label "platform" ;
+    rdfs:comment "Supported platform(s) for a technique from x_mitre_platforms array (Windows, macOS, Linux, etc.)." .
+
+attack:domain a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource ;
+    rdfs:range xsd:string ;
+    rdfs:label "domain" ;
+    rdfs:comment "ATT&CK domain(s) from x_mitre_domains array (enterprise-attack, mobile-attack, ics-attack, etc.)." .
+
+attack:confidence a owl:DatatypeProperty ;
+    rdfs:domain attack:Technique , attack:Group , attack:Software ;
+    rdfs:range xsd:integer ;
+    rdfs:label "confidence" ;
+    rdfs:comment "Confidence score from STIX confidence field (integer 1-99)." .
+
+attack:revoked a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:Group , attack:Software ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "revoked" ;
+    rdfs:comment "Boolean flag indicating if entity has been revoked from revoked STIX field." .
+
+attack:attackVersion a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource ;
+    rdfs:range xsd:string ;
+    rdfs:label "attack version" ;
+    rdfs:comment "ATT&CK version string when entity was defined/modified from x_mitre_version." .
+
+attack:shortname a owl:DatatypeProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range xsd:string ;
+    rdfs:label "short name" ;
+    rdfs:comment "Short name from kill_chain_phases.phase_name linking technique to tactic." .
+
+attack:killChainName a owl:DatatypeProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range xsd:string ;
+    rdfs:label "kill chain name" ;
+    rdfs:comment "Kill chain name from kill_chain_phases.kill_chain_name (mitre-attack, mitre-mobile-attack, mitre-ics-attack)." .
+
+attack:createdBy a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource ;
+    rdfs:range xsd:string ;
+    rdfs:label "created by" ;
+    rdfs:comment "Reference to MITRE identity that created the entity from created_by_ref in STIX." .
+
+attack:modifiedBy a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic , attack:Technique , attack:Group , attack:Software , attack:DataSource , attack:DataComponent , attack:Asset , attack:DetectionStrategy , attack:Analytic , attack:LogSource ;
+    rdfs:range xsd:string ;
+    rdfs:label "modified by" ;
+    rdfs:comment "Reference to MITRE identity that last modified the entity from x_mitre_modified_by_ref in STIX." .

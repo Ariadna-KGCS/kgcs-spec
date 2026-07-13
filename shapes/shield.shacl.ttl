@@ -1,0 +1,51 @@
+# KGCS SHIELD SHACL Shapes v1.0
+#
+# Validates DeceptionTechnique nodes against the SHIELD ontology
+# (standards/shield/shield-ontology-v1.0.owl).
+#
+# Source standard: MITRE SHIELD JSON (archived; superseded by ENGAGE)
+# Enforcement level: STANDARD (flag at pre-RAG; data is still loaded)
+#
+# Note: SHIELD is archived. All DTE nodes are loaded for coverage completeness
+# but are deprioritised in favour of ENGAGE in agent responses.
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix shield: <http://www.motherhacker.me/kgcs/ontology/shield#> .
+
+
+# ---------------------------------------------------------------------------
+# DeceptionTechnique node shape
+#
+# Every DeceptionTechnique node must carry:
+#   - techniqueId: canonical SHIELD identifier e.g. DTE0004 — unique key
+#   - name: human-readable technique name
+#
+# techniqueId pattern: DTE followed by 4 digits
+# ---------------------------------------------------------------------------
+
+shield:DeceptionTechniqueShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:DeceptionTechnique ;
+
+    # techniqueId: canonical SHIELD identifier — primary unique key
+    # Pattern: DTE followed by 4 digits
+    sh:property [
+        sh:path shield:techniqueId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^DTE\\d{4}$" ;
+        sh:message "DeceptionTechnique must have exactly one techniqueId matching DTE\\d{4}." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # name: human-readable technique name
+    sh:property [
+        sh:path shield:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "DeceptionTechnique must have a name." ;
+        sh:severity sh:Warning ;
+    ] .

@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kgcs.motherhacker.me/schema/offensive-response.json",
+  "title": "KGCS Offensive Agent Response Data",
+  "description": "Schema for the 'data' field in Offensive Agent responses. Covers Weakness → AttackPattern → Technique → Tactic traversals. Placed inside the canonical response envelope (agent-consumable-schema.json). Causal invariant: Weakness must traverse AttackPattern before reaching Technique — no shortcuts.",
+  "type": "object",
+  "required": ["techniques"],
+  "additionalProperties": false,
+  "properties": {
+    "techniques": {
+      "type": "array",
+      "description": "ATT&CK techniques reachable via the full causal chain from the queried Weakness. Empty when no path exists.",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^T\\d{4}(\\.\\d{3})?$",
+            "description": "ATT&CK technique or subtechnique identifier.",
+            "examples": ["T1059", "T1059.001", "T1190"]
+          },
+          "name": {
+            "type": "string",
+            "description": "ATT&CK technique name.",
+            "examples": ["Command and Scripting Interpreter", "Exploit Public-Facing Application"]
+          },
+          "tactic": {
+            "type": "string",
+            "description": "Primary tactic phase name (phaseName from Tactic node).",
+            "examples": ["Execution", "Initial Access", "Command and Control"]
+          },
+          "tactics": {
+            "type": "array",
+            "description": "All tactic phases this technique belongs to (techniques can appear in multiple tactics).",
+            "items": { "type": "string" },
+            "examples": [["Execution", "Persistence"]]
+          },
+          "capec": {
+            "type": "array",
+            "description": "CAPEC attack patterns that implement this technique (IMPLEMENTS edges, sourced from CAPEC XML Taxonomy_Mapping).",
+            "items": {
+              "type": "string",
+              "pattern": "^CAPEC-\\d+$"
+            },
+            "examples": [["CAPEC-242", "CAPEC-66"]]
+          },
+          "subtechniques": {
+            "type": "array",
+            "description": "Child SubTechnique IDs (SUBTECHNIQUE_OF edges, reverse direction). Only present for Technique nodes, not for SubTechnique nodes.",
+            "items": {
+              "type": "string",
+              "pattern": "^T\\d{4}\\.\\d{3}$"
+            },
+            "examples": [["T1059.001", "T1059.003"]]
+          },
+          "parent_technique": {
+            "type": "string",
+            "pattern": "^T\\d{4}$",
+            "description": "Parent technique ID. Only present when 'id' is a SubTechnique (T####.###).",
+            "examples": ["T1059"]
+          }
+        }
+      }
+    },
+    "attack_paths": {
+      "type": "array",
+      "description": "Full causal paths from the queried Weakness to each Technique. Paths may use a direct CAPEC→ATT&CK mapping or an inherited mapping via one or more parent CAPEC nodes.",
+      "items": {
+        "type": "object",
+        "required": ["weakness_id", "attack_pattern_id", "technique_id", "mapping_type"],
+        "additionalProperties": false,
+        "properties": {
+          "weakness_id": {
+            "type": "string",
+            "pattern": "^CWE-\\d+$",
+            "description": "Starting CWE identifier."
+          },
+          "attack_pattern_id": {
+            "type": "string",
+            "pattern": "^CAPEC-\\d+$",
+            "description": "Intermediate CAPEC attack pattern (causal chain hop; must not be skipped)."
+          },
+          "technique_id": {
+            "type": "string",
+            "pattern": "^T\\d{4}(\\.\\d{3})?$",
+            "description": "Terminal ATT&CK technique or subtechnique."
+          },
+          "mapping_type": {
+            "type": "string",
+            "enum": ["direct", "inherited_via_parent_capec"],
+            "description": "Whether the ATT&CK mapping is attached directly to the queried CAPEC or inherited through a parent CAPEC."
+          },
+          "mapped_attack_pattern_id": {
+            "type": "string",
+            "pattern": "^CAPEC-\\d+$",
+            "description": "Parent CAPEC that directly carries the ATT&CK mapping when mapping_type is inherited."
+          },
+          "hierarchy_depth": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of CAPEC ChildOf hops from attack_pattern_id to mapped_attack_pattern_id."
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "techniques": [
+        {
+          "id": "T1059",
+          "name": "Command and Scripting Interpreter",
+          "tactic": "Execution",
+          "tactics": ["Execution"],
+          "capec": ["CAPEC-242"],
+          "subtechniques": ["T1059.001", "T1059.003", "T1059.007"]
+        },
+        {
+          "id": "T1059.001",
+          "name": "PowerShell",
+          "tactic": "Execution",
+          "tactics": ["Execution"],
+          "capec": ["CAPEC-242"],
+          "parent_technique": "T1059"
+        }
+      ],
+      "attack_paths": [
+        {
+          "weakness_id": "CWE-917",
+          "attack_pattern_id": "CAPEC-242",
+          "technique_id": "T1059",
+          "mapping_type": "direct"
+        }
+      ]
+    }
+  ]
+}

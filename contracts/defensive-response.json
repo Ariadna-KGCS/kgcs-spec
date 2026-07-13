@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kgcs.motherhacker.me/schema/defensive-response.json",
+  "title": "KGCS Defensive Agent Response Data",
+  "description": "Schema for the 'data' field in Defensive Agent responses. Covers coverage maps for ATT&CK techniques: D3FEND mitigations, CAR detections, SHIELD deceptions, and ENGAGE engagement concepts. Placed inside the canonical response envelope (agent-consumable-schema.json). Coverage counts are additive; causal edges are never modified.",
+  "type": "object",
+  "required": ["mitigations", "detections", "deceptions", "engagements"],
+  "additionalProperties": false,
+  "properties": {
+    "technique_id": {
+      "type": "string",
+      "pattern": "^T\\d{4}(\\.\\d{3})?$",
+      "description": "The ATT&CK technique or subtechnique this coverage map applies to.",
+      "examples": ["T1059", "T1190"]
+    },
+    "mitigations": {
+      "type": "array",
+      "description": "D3FEND defensive techniques that mitigate the queried ATT&CK technique (MITIGATED_BY edges).",
+      "items": {
+        "type": "object",
+        "required": ["d3fendId"],
+        "additionalProperties": false,
+        "properties": {
+          "d3fendId": {
+            "type": "string",
+            "pattern": "^(D3-[A-Z][A-Z0-9]*|[A-Za-z][A-Za-z0-9-]*)$",
+            "description": "D3FEND technique identifier. Current graph data may use either compact D3FEND IDs or canonical fragment-style identifiers.",
+            "examples": ["D3-PA", "D3-NTA", "D3-FAPA", "ApplicationProtocolCommandAnalysis"]
+          },
+          "name": {
+            "type": "string",
+            "description": "D3FEND technique human-readable name."
+          }
+        }
+      }
+    },
+    "detections": {
+      "type": "array",
+      "description": "MITRE CAR analytics that detect the queried ATT&CK technique (DETECTED_BY edges).",
+      "items": {
+        "type": "object",
+        "required": ["analyticId"],
+        "additionalProperties": false,
+        "properties": {
+          "analyticId": {
+            "type": "string",
+            "pattern": "^CAR-\\d{4}-\\d{2}-\\d{3}$",
+            "description": "CAR analytic identifier.",
+            "examples": ["CAR-2020-04-001", "CAR-2021-05-002"]
+          },
+          "title": {
+            "type": "string",
+            "description": "CAR analytic title."
+          },
+          "coverageLevel": {
+            "type": "string",
+            "description": "Coverage level from CAR analytics YAML (e.g., 'Moderate', 'High').",
+            "examples": ["Low", "Moderate", "High"]
+          }
+        }
+      }
+    },
+    "deceptions": {
+      "type": "array",
+      "description": "SHIELD deception techniques that counter the queried ATT&CK technique (COUNTERED_BY edges).",
+      "items": {
+        "type": "object",
+        "required": ["techniqueId"],
+        "additionalProperties": false,
+        "properties": {
+          "techniqueId": {
+            "type": "string",
+            "pattern": "^DTE\\d{4}$",
+            "description": "SHIELD deception technique identifier.",
+            "examples": ["DTE0001", "DTE0018"]
+          },
+          "name": {
+            "type": "string",
+            "description": "SHIELD technique name."
+          }
+        }
+      }
+    },
+    "engagements": {
+      "type": "array",
+      "description": "ENGAGE activity concepts that disrupt the queried ATT&CK technique (DISRUPTS edges, activities only — EAC prefix). Strategic concepts (SAC/SAP/SGO) are excluded.",
+      "items": {
+        "type": "object",
+        "description": "EngagementConcept node. Exactly one of activityId, approachId, or goalId will be present.",
+        "additionalProperties": false,
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "pattern": "^EAC\\d{4}$",
+            "description": "ENGAGE activity identifier. Present for activity-type engagement concepts.",
+            "examples": ["EAC0002", "EAC0016"]
+          },
+          "approachId": {
+            "type": "string",
+            "pattern": "^SAP\\d{4}$",
+            "description": "ENGAGE approach identifier. Present for approach-type engagement concepts.",
+            "examples": ["SAP0001"]
+          },
+          "goalId": {
+            "type": "string",
+            "pattern": "^SGO\\d{4}$",
+            "description": "ENGAGE goal identifier. Present for goal-type engagement concepts.",
+            "examples": ["SGO0001"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Engagement concept name."
+          }
+        },
+        "anyOf": [
+          { "required": ["activityId"] },
+          { "required": ["approachId"] },
+          { "required": ["goalId"] }
+        ]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregate coverage counts for rapid assessment.",
+      "additionalProperties": false,
+      "properties": {
+        "total_mitigations": { "type": "integer", "minimum": 0 },
+        "total_detections":  { "type": "integer", "minimum": 0 },
+        "total_deceptions":  { "type": "integer", "minimum": 0 },
+        "total_engagements": { "type": "integer", "minimum": 0 },
+        "has_coverage": {
+          "type": "boolean",
+          "description": "True when at least one of mitigations, detections, or deceptions is non-empty."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "technique_id": "T1190",
+      "mitigations": [
+        { "d3fendId": "D3-PA", "name": "Process Analysis" },
+        { "d3fendId": "D3-NTA", "name": "Network Traffic Analysis" }
+      ],
+      "detections": [
+        { "analyticId": "CAR-2021-05-002", "title": "Batch File Write to System32", "coverageLevel": "Moderate" }
+      ],
+      "deceptions": [
+        { "techniqueId": "DTE0001", "name": "Admin User Account" }
+      ],
+      "engagements": [
+        { "activityId": "EAC0002", "name": "Application Diversity" }
+      ],
+      "summary": {
+        "total_mitigations": 2,
+        "total_detections": 1,
+        "total_deceptions": 1,
+        "total_engagements": 1,
+        "has_coverage": true
+      }
+    },
+    {
+      "technique_id": "T1059",
+      "mitigations": [],
+      "detections": [],
+      "deceptions": [],
+      "engagements": [],
+      "summary": {
+        "total_mitigations": 0,
+        "total_detections": 0,
+        "total_deceptions": 0,
+        "total_engagements": 0,
+        "has_coverage": false
+      }
+    }
+  ]
+}

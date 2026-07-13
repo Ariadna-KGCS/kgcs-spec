@@ -1,0 +1,58 @@
+# KGCS D3FEND SHACL Shapes v1.0
+#
+# Validates DefensiveTechnique nodes against the D3FEND ontology
+# (standards/d3fend/d3fend-ontology-v1.0.owl).
+#
+# Source standard: MITRE D3FEND OWL ontology v1.3+
+# Enforcement level: STRICT (reject at ingest)
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix d3fend: <http://www.motherhacker.me/kgcs/ontology/d3fend#> .
+
+
+# ---------------------------------------------------------------------------
+# DefensiveTechnique node shape
+#
+# Every DefensiveTechnique node must carry:
+#   - d3fendId: canonical D3FEND identifier (e.g. D3-PA, D3-SICA) — unique key
+#   - name: human-readable technique name
+#
+# D3FEND technique IDs use the "D3-" prefix. They are extracted from the
+# D3FEND OWL ontology's URI fragments and mapped through d3fend.json.
+# ---------------------------------------------------------------------------
+
+d3fend:DefensiveTechniqueShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf d3fend:d3fendId ;
+
+    # d3fendId: canonical D3FEND identifier — primary unique key
+    sh:property [
+        sh:path d3fend:d3fendId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 3 ;
+        sh:message "DefensiveTechnique must have exactly one d3fendId." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # d3fendId format: canonical "D3-<LETTERS>". Warning (not Violation) because
+    # load_d3fend.py has a documented fallback: if d3fend.json cannot map the
+    # OWL URI fragment, the fragment itself is used as d3fendId.
+    sh:property [
+        sh:path d3fend:d3fendId ;
+        sh:pattern "^D3-[A-Z]+$" ;
+        sh:message "d3fendId should match D3-<LETTERS> (loader fallback may use URI fragment)." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # name: human-readable name from D3FEND label
+    sh:property [
+        sh:path d3fend:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:message "DefensiveTechnique must have a name." ;
+        sh:severity sh:Warning ;
+    ] .

@@ -1,0 +1,79 @@
+@prefix asset: <http://www.motherhacker.me/kgcs/ontology/asset#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#################################################################
+
+asset:AssetExtensionOntology a owl:Ontology ;
+    rdfs:label "KGCS Asset Extension Ontology v1.0" ;
+    rdfs:comment "Organizational asset modeling layer built on top of Core Ontology v1.0." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+asset:Asset a owl:Class ;
+    rdfs:label "Asset" ;
+    rdfs:comment "Organizational system, device, workload, or environment instance." .
+
+asset:AssetConfiguration a owl:Class ;
+    rdfs:label "Asset Configuration" ;
+    rdfs:comment "Concrete configuration instance of an organizational Asset." .
+
+#################################################################
+# Disjointness (Extension-Level)
+#################################################################
+
+asset:Asset owl:disjointWith 
+    kgcs:Platform ,
+    kgcs:Vulnerability ,
+    kgcs:Weakness ,
+    kgcs:Technique ,
+    kgcs:AttackPattern .
+
+#################################################################
+# Object Properties
+#################################################################
+
+asset:hasConfiguration a owl:ObjectProperty ;
+    rdfs:domain asset:Asset ;
+    rdfs:range asset:AssetConfiguration ;
+    rdfs:label "has configuration" ;
+    rdfs:comment "Associates an Asset with its concrete configuration instance." .
+
+asset:maps_to a owl:ObjectProperty ;
+    rdfs:domain asset:AssetConfiguration ;
+    rdfs:range kgcs:PlatformConfiguration ;
+    rdfs:label "maps to platform configuration" ;
+    rdfs:comment "Maps an AssetConfiguration to a Core PlatformConfiguration." .
+
+asset:runsPlatform a owl:ObjectProperty ;
+    rdfs:domain asset:Asset ;
+    rdfs:range kgcs:Platform ;
+    rdfs:label "runs platform" ;
+    rdfs:comment "Optional direct association between an Asset and a Platform." .
+
+#################################################################
+# Cardinality Restrictions
+#################################################################
+
+asset:Asset rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty asset:hasConfiguration ;
+      owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass asset:AssetConfiguration
+    ] .
+
+asset:AssetConfiguration rdfs:subClassOf
+    [ a owl:Restriction ;
+      owl:onProperty asset:maps_to ;
+      owl:minQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
+      owl:onClass kgcs:PlatformConfiguration
+    ] .

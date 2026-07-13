@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kgcs.motherhacker.me/schema/agent-consumable-schema.json",
+  "title": "KGCS Agent Response Envelope",
+  "description": "Canonical response envelope for all KGCS agent responses. All three specialist agents and the orchestrator return payloads conforming to this schema.",
+  "type": "object",
+  "required": ["version", "correlation_id", "status", "data", "provenance", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "Schema version. Version bump required for breaking changes to the envelope."
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID propagated end-to-end for audit and tracing."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "empty", "error"],
+      "description": "ok: data returned; empty: valid query but no rows; error: non-recoverable failure."
+    },
+    "data": {
+      "type": ["object", "array"],
+      "description": "Agent-specific payload. Validated separately against the per-agent response schema (systems-response.json, offensive-response.json, defensive-response.json)."
+    },
+    "provenance": {
+      "type": "array",
+      "description": "Source attribution for all data in this response. Required to have at least one entry when status is 'ok'.",
+      "items": {
+        "type": "object",
+        "required": ["source", "ids"],
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Authoritative data source name, e.g. 'NVD', 'MITRE ATT&CK', 'MITRE CAPEC'."
+          },
+          "ids": {
+            "type": "array",
+            "description": "Canonical IDs from the source that contributed to this response.",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp of the source record at time of ingestion."
+          }
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["value", "basis"],
+      "additionalProperties": false,
+      "description": "Confidence computation per docs/05-agents/confidence-model/spec.md.",
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Scalar confidence 0–1. Computed per confidence model spec."
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "COMPLETE_CHAIN",
+            "PARTIAL_CHAIN",
+            "SINGLE_HOP",
+            "NO_MATCH",
+            "VALIDATED_BY_SHACL",
+            "COVERAGE_MAP",
+            "MULTI_AGENT_AVERAGE",
+            "MULTI_AGENT_MINIMUM",
+            "MULTI_AGENT_WEIGHTED"
+          ],
+          "description": "Basis for the confidence value. COMPLETE_CHAIN = full causal path traversed."
+        },
+        "signals": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Raw signals used to compute confidence.value.",
+          "properties": {
+            "rows": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of result rows returned by the Cypher template."
+            },
+            "hops": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of causal chain hops traversed (max 6 for full chain)."
+            },
+            "shape_validated": {
+              "type": "boolean",
+              "description": "Whether the query result was cross-checked against SHACL shapes."
+            },
+            "freshness_days": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Days since the most recently modified source record. Values > 365 trigger a 0.1 confidence penalty."
+            }
+          }
+        },
+        "degradation": {
+          "type": "array",
+          "description": "Ordered list of applied confidence penalties, e.g. ['missing_hop:capec', 'stale_data'].",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Present (and non-empty) when status is 'error'. Contains human-readable error messages.",
+      "items": { "type": "string" }
+    }
+  },
+  "if": {
+    "properties": { "status": { "const": "ok" } },
+    "required": ["status"]
+  },
+  "then": {
+    "properties": {
+      "provenance": { "minItems": 1 }
+    }
+  },
+  "examples": [
+    {
+      "version": "1.0",
+      "correlation_id": "550e8400-e29b-41d4-a716-446655440000",
+      "status": "ok",
+      "data": {
+        "vulnerabilities": [
+          {
+            "cveId": "CVE-2021-44228",
+            "scores": [{ "version": "3.1", "baseScore": 10.0 }],
+            "weakness": { "cweId": "CWE-917" }
+          }
+        ]
+      },
+      "provenance": [
+        { "source": "NVD", "ids": ["CVE-2021-44228"], "timestamp": "2024-01-15T00:00:00Z" }
+      ],
+      "confidence": {
+        "value": 0.9,
+        "basis": "COMPLETE_CHAIN",
+        "signals": { "rows": 1, "hops": 2, "shape_validated": true, "freshness_days": 120 },
+        "degradation": []
+      }
+    },
+    {
+      "version": "1.0",
+      "correlation_id": "550e8400-e29b-41d4-a716-446655440001",
+      "status": "empty",
+      "data": {},
+      "provenance": [],
+      "confidence": {
+        "value": 0.0,
+        "basis": "NO_MATCH",
+        "signals": { "rows": 0, "hops": 0, "shape_validated": false, "freshness_days": 0 },
+        "degradation": ["no_results"]
+      }
+    },
+    {
+      "version": "1.0",
+      "correlation_id": "550e8400-e29b-41d4-a716-446655440002",
+      "status": "error",
+      "data": {},
+      "provenance": [],
+      "confidence": {
+        "value": 0.0,
+        "basis": "NO_MATCH",
+        "signals": { "rows": 0, "hops": 0, "shape_validated": false, "freshness_days": 0 },
+        "degradation": ["query_timeout"]
+      },
+      "errors": ["Cypher query timed out after 30s"]
+    }
+  ]
+}
