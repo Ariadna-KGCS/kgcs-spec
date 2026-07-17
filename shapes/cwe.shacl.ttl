@@ -1,8 +1,10 @@
-# KGCS CWE SHACL Shapes v1.1
+# KGCS CWE SHACL Shapes v1.2
 #
-# Validates Weakness nodes against the CWE ontology
-# (ontology/standards/cwe-ontology-v1.0.owl) and the CWE
-# enrichment module (ontology/standards/cwe-enrichment-v1.0.owl).
+# Validates Weakness and Consequence nodes against the CWE ontology
+# (ontology/standards/cwe-ontology-v1.0.owl), the CWE enrichment
+# module (ontology/standards/cwe-enrichment-v1.0.owl) and the CWE
+# consequences module
+# (ontology/standards/cwe-consequences-v1.0.owl).
 #
 # Source standard: MITRE CWE XML catalog (Core Definition XSD v7.3)
 # Enforcement level: STRICT (reject at ingest)
@@ -13,6 +15,11 @@
 # @Structure, @Status) are minCount 1: any Weakness loaded by the
 # enrichment-aware loader carries them, and a graph loaded by the
 # pre-enrichment loader is expected to fail until re-ingested.
+#
+# v1.2: adds cwe:ConsequenceShape per ADR-0001 (consequence
+# sub-nodes with synthetic deterministic keys, record grouping
+# preserved). CWE vocabularies only — CAPEC consequences are
+# validated in capec.shacl.ttl with their own enums; never merge.
 
 @prefix sh:    <http://www.w3.org/ns/shacl#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
@@ -199,5 +206,92 @@ cwe:WeaknessShape
         sh:datatype xsd:string ;
         sh:in ( "Primary" "Resultant" "Indirect" ) ;
         sh:message "Weakness.ordinalities values must be one of: Primary, Resultant, Indirect." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Consequence node shape (v1.2, ADR-0001)
+#
+# One node per XSD Common_Consequences/Consequence record of a Weakness,
+# attached via cwe:has_consequence (graph: HAS_CONSEQUENCE). The record's
+# internal Scope x Impact grouping is preserved: scopes/impacts are arrays
+# INSIDE the node, never flattened across records. Leaf annotation only —
+# no agent traversal may pass through a Consequence.
+#
+# Graph label :Consequence is shared with CAPEC (provenance by topology);
+# vocabularies stay source-separated — CWE's 25-value impact enum is
+# validated here, CAPEC's 10-value enum in capec.shacl.ttl. Never merge.
+# ---------------------------------------------------------------------------
+
+cwe:ConsequenceShape
+    a sh:NodeShape ;
+    sh:targetClass cwe:Consequence ;
+
+    # consequence_id: synthetic deterministic key (XSD Consequence_ID is
+    # unpopulated in the real catalog) — CWE-<n>-C<ordinal>, document order
+    sh:property [
+        sh:path cwe:consequence_id ;
+        sh:datatype xsd:string ;
+        sh:pattern "^CWE-\\d+-C\\d+$" ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Consequence must have exactly one consequenceId matching CWE-N-CM." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # scope: required in XSD (1..N within the record)
+    sh:property [
+        sh:path cwe:scope ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Confidentiality" "Integrity" "Availability" "Access Control"
+                "Accountability" "Authentication" "Authorization"
+                "Non-Repudiation" "Other" ) ;
+        sh:message "Consequence.scopes values must come from the CWE ScopeEnumeration (9 values)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # technical_impact: required in the CWE XSD (1..N within the record) —
+    # unlike CAPEC, where Impact is optional
+    sh:property [
+        sh:path cwe:technical_impact ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Modify Memory" "Read Memory" "Modify Files or Directories"
+                "Read Files or Directories" "Modify Application Data"
+                "Read Application Data" "DoS: Crash, Exit, or Restart"
+                "DoS: Amplification" "DoS: Instability"
+                "DoS: Resource Consumption (CPU)"
+                "DoS: Resource Consumption (Memory)"
+                "DoS: Resource Consumption (Other)"
+                "Execute Unauthorized Code or Commands"
+                "Gain Privileges or Assume Identity"
+                "Bypass Protection Mechanism" "Hide Activities"
+                "Alter Execution Logic" "Quality Degradation"
+                "Unexpected State" "Varies by Context"
+                "Increase Analytical Complexity" "Reduce Maintainability"
+                "Reduce Performance" "Reduce Reliability" "Other" ) ;
+        sh:message "Consequence.impacts values must come from the CWE TechnicalImpactEnumeration (25 values, CWE-specific)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # consequence_likelihood: optional (0..1); XSD LikelihoodEnumeration
+    sh:property [
+        sh:path cwe:consequence_likelihood ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "High" "Medium" "Low" "Unknown" ) ;
+        sh:message "Consequence.likelihood must be one of: High, Medium, Low, Unknown." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # consequence_note: optional (0..1), StructuredText flattened at ETL
+    sh:property [
+        sh:path cwe:consequence_note ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Consequence.note must be a single non-empty string when present." ;
         sh:severity sh:Violation ;
     ] .

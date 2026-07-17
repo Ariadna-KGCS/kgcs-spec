@@ -1,0 +1,83 @@
+@prefix cwe: <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Versioned consequences module for the frozen CWE ontology v1.0.
+# Models Common_Consequences records (MITRE CWE XML catalog, Core
+# Definition XSD v7.3) as sub-nodes per ADR-0001: one Consequence
+# individual per XSD Consequence record, preserving the record's
+# internal Scope x Impact grouping. Leaf annotation only — the
+# causal chain is untouched and no traversal may pass through a
+# Consequence.
+#
+# cwe-ontology-v1.0.owl and cwe-enrichment-v1.0.owl remain frozen
+# and untouched.
+#################################################################
+
+cwe:CWEConsequencesOntology a owl:Ontology ;
+    rdfs:label "KGCS CWE Consequences Module v1.0" ;
+    rdfs:comment "Sub-node modeling of CWE Common_Consequences per ADR-0001: cwe:Consequence class keyed by synthetic deterministic consequence_id (CWE-<n>-C<ordinal>), with scope/impact arrays preserved per record. Extends cwe-ontology-v1.0 without modifying it." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> ,
+                <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+
+#################################################################
+# Classes
+#################################################################
+
+cwe:Consequence a owl:Class ;
+    rdfs:label "Consequence" ;
+    rdfs:comment "One Common_Consequences record of a CWE Weakness (XSD CommonConsequencesType/Consequence): the security scopes violated and technical impacts arising if the weakness is successfully exploited, as asserted by MITRE for that record. Graph label :Consequence (shared with CAPEC; provenance by topology). Leaf annotation — never a causal-chain hop." .
+
+#################################################################
+# Object Properties
+#################################################################
+
+cwe:has_consequence a owl:ObjectProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range cwe:Consequence ;
+    rdfs:label "has consequence" ;
+    rdfs:comment "Attaches a Common_Consequences record to its Weakness (graph: HAS_CONSEQUENCE). Multi-valued; one edge per record." .
+
+#################################################################
+# Datatype Properties — identity
+#################################################################
+
+cwe:consequence_id a owl:DatatypeProperty ;
+    rdfs:domain cwe:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "consequence id" ;
+    rdfs:comment "Synthetic deterministic key, pattern CWE-<n>-C<ordinal> with ordinal in XML document order (the XSD Consequence_ID attribute is unpopulated in the real catalog). Merge key for idempotent refresh; ordinals beyond the current record count per parent are pruned on re-ingest." .
+
+#################################################################
+# Datatype Properties — record content (per XSD Consequence)
+#################################################################
+
+cwe:scope a owl:DatatypeProperty ;
+    rdfs:domain cwe:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "scope" ;
+    rdfs:comment "Security property violated (XSD Consequence/Scope, 1..N within the record). Multi-valued; loaded as array, order preserved. Vocabulary (ScopeEnumeration, 9): Confidentiality, Integrity, Availability, Access Control, Accountability, Authentication, Authorization, Non-Repudiation, Other." .
+
+cwe:technical_impact a owl:DatatypeProperty ;
+    rdfs:domain cwe:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "technical impact" ;
+    rdfs:comment "Technical impact arising on successful exploitation (XSD Consequence/Impact, 1..N within the record). Multi-valued; loaded as array, order preserved. Vocabulary (TechnicalImpactEnumeration, 25 values, CWE-specific — never merged with CAPEC's 10-value enum): Modify Memory, Read Memory, Modify Files or Directories, Read Files or Directories, Modify Application Data, Read Application Data, DoS: Crash Exit or Restart, DoS: Amplification, DoS: Instability, DoS: Resource Consumption (CPU/Memory/Other), Execute Unauthorized Code or Commands, Gain Privileges or Assume Identity, Bypass Protection Mechanism, Hide Activities, Alter Execution Logic, Quality Degradation, Unexpected State, Varies by Context, Increase Analytical Complexity, Reduce Maintainability, Reduce Performance, Reduce Reliability, Other." .
+
+cwe:consequence_likelihood a owl:DatatypeProperty ;
+    rdfs:domain cwe:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "consequence likelihood" ;
+    rdfs:comment "Likelihood of this consequence relative to the record's siblings (XSD Consequence/Likelihood, 0..1). Vocabulary (LikelihoodEnumeration): High, Medium, Low, Unknown. Sparse in real data (~6%)." .
+
+cwe:consequence_note a owl:DatatypeProperty ;
+    rdfs:domain cwe:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "consequence note" ;
+    rdfs:comment "Additional commentary about the record (XSD Consequence/Note, 0..1). Source is StructuredTextType; flattened to plain text at ETL per mapping doc. Present in ~61% of real CWE records — primary quotable grounding text of the record." .

@@ -1,10 +1,23 @@
-# KGCS CAPEC SHACL Shapes v1.0
+# KGCS CAPEC SHACL Shapes v1.1
 #
-# Validates AttackPattern nodes against the CAPEC ontology
-# (standards/capec/capec-ontology-v1.0.owl).
+# Validates AttackPattern and Consequence nodes against the CAPEC
+# ontology (ontology/standards/capec-ontology-v1.0.owl) and the
+# CAPEC consequences module
+# (ontology/standards/capec-consequences-v1.0.owl).
 #
-# Source standard: MITRE CAPEC XML
+# Source standard: MITRE CAPEC XML (Core Attack Pattern XSD v3.5)
 # Enforcement level: STRICT (reject at ingest)
+#
+# v1.1: adds capec:ConsequenceShape per ADR-0001 (consequence
+# sub-nodes). Record-content paths use the frozen v1.0 camelCase
+# property names (capec:scope, capec:technicalImpact,
+# capec:consequenceLikelihood); the identity and note paths use
+# the snake_case names of the consequences module — sh:path always
+# follows the actual OWL name (see shapes/README.md, "Naming
+# layers"). Likelihood vocabulary follows the XSD
+# LikelihoodEnumeration (High, Medium, Low, Unknown); the frozen
+# OWL comment listing "Always, Often, Sometimes, Rare, Unknown"
+# is a recorded v1.0 discrepancy (ADR-0001, OWL v1.1 candidate).
 
 @prefix sh:    <http://www.w3.org/ns/shacl#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
@@ -48,5 +61,81 @@ capec:AttackPatternShape
         sh:datatype xsd:string ;
         sh:minCount 1 ;
         sh:message "AttackPattern must have a name." ;
-        sh:severity sh:Warning ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Consequence node shape (v1.1, ADR-0001)
+#
+# One node per XSD Consequences/Consequence record of an AttackPattern,
+# attached via capec:hasConsequence (graph: HAS_CONSEQUENCE). The record's
+# internal Scope x Impact grouping is preserved: scopes/impacts are arrays
+# INSIDE the node, never flattened across records. Leaf annotation only —
+# no agent traversal may pass through a Consequence.
+#
+# Graph label :Consequence is shared with CWE (provenance by topology);
+# vocabularies stay source-separated — CAPEC's 10-value impact enum is
+# validated here, CWE's 25-value enum in cwe.shacl.ttl. Never merge them.
+# ---------------------------------------------------------------------------
+
+capec:ConsequenceShape
+    a sh:NodeShape ;
+    sh:targetClass capec:Consequence ;
+
+    # consequence_id: synthetic deterministic key (XSD Consequence_ID is
+    # unpopulated in the real catalog) — CAPEC-<n>-C<ordinal>, document order
+    sh:property [
+        sh:path capec:consequence_id ;
+        sh:datatype xsd:string ;
+        sh:pattern "^CAPEC-\\d+-C\\d+$" ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Consequence must have exactly one consequenceId matching CAPEC-N-CM." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # scope: required in XSD (1..N within the record)
+    sh:property [
+        sh:path capec:scope ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Confidentiality" "Integrity" "Availability" "Access Control"
+                "Accountability" "Authentication" "Authorization"
+                "Non-Repudiation" "Other" ) ;
+        sh:message "Consequence.scopes values must come from the CAPEC ScopeEnumeration (9 values)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # technicalImpact: optional in the CAPEC XSD (0..N within the record) —
+    # unlike CWE, where Impact is required
+    sh:property [
+        sh:path capec:technicalImpact ;
+        sh:datatype xsd:string ;
+        sh:in ( "Modify Data" "Read Data" "Unreliable Execution"
+                "Resource Consumption" "Execute Unauthorized Commands"
+                "Gain Privileges" "Bypass Protection Mechanism"
+                "Hide Activities" "Alter Execution Logic" "Other" ) ;
+        sh:message "Consequence.impacts values must come from the CAPEC TechnicalImpactEnumeration (10 values, CAPEC-specific)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # consequenceLikelihood: optional (0..1); XSD LikelihoodEnumeration
+    sh:property [
+        sh:path capec:consequenceLikelihood ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "High" "Medium" "Low" "Unknown" ) ;
+        sh:message "Consequence.likelihood must be one of: High, Medium, Low, Unknown (XSD vocabulary; frozen OWL comment deviates — see ADR-0001)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # consequence_note: optional (0..1), StructuredText flattened at ETL
+    sh:property [
+        sh:path capec:consequence_note ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Consequence.note must be a single non-empty string when present." ;
+        sh:severity sh:Violation ;
     ] .
