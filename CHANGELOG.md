@@ -12,6 +12,8 @@ All notable changes to the KGCS standard. Consumers (`kgcs-pipeline`, `kgcs-serv
 
 ### Added
 
+- **CWE enrichment module v1.0** (`ontology/standards/cwe-enrichment-v1.0.owl`): 12 new datatype properties on `kgcs:Weakness` extracted from the MITRE CWE XML catalog (XSD v7.3) — `description`, `extended_description`, `mapping_usage`, `mapping_reasons`, `structure`, `status`, `alternate_terms`, `likelihood_of_exploit`, `functional_areas`, `affected_resources`, `modes_of_introduction`, `ordinalities`. Node properties only: no new classes, no object properties, no topology change; `cwe-ontology-v1.0.owl` remains frozen and untouched. Mapping rules (StructuredText flattening, dedup, deprecated-entry policy, idempotent refresh) in `mappings/cwe-enrichment-to-owl-v1.0.md`.
+- `shapes/cwe.shacl.ttl` v1.1: property shapes for the enrichment module. XSD-required fields (`description`, `mapping_usage`, `structure`, `status`) are `sh:minCount 1` — a graph loaded by a pre-enrichment loader fails validation until re-ingested with the enrichment-aware `load_cwe.py`. Enum facets constrained with `sh:in` mirroring the XSD enumerations.
 - ID format patterns completed across all standards. New `sh:pattern` constraints (severity Warning): `cpe:cpeUri`/`cpe:criteria` (CPE 2.3 prefix), `cpe:cpeNameId`/`cpe:matchCriteriaId` (NVD UUID), `d3fend:d3fendId` (`^D3-[A-Z]+$`; Warning because load_d3fend.py has a documented URI-fragment fallback), `engage:approachId` (`^[ES]AP\d{4}$`), `engage:goalId` (`^[ES]GO\d{4}$`). Patterns derived from loader source contracts; raw NVD/Engage data not re-verified in this environment. Already-patterned IDs (attackId, cveId, scoreId, cweId, capecId, analyticId, techniqueId, activityId) confirmed consistent.
 
 ### Removed

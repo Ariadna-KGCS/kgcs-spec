@@ -1,0 +1,116 @@
+@prefix cwe: <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Versioned enrichment module for the frozen CWE ontology v1.0.
+# Adds node-level datatype properties extracted from the MITRE
+# CWE XML catalog (Core Definition XSD v7.3). No object
+# properties, no new classes, no topology change: the causal
+# chain and the CWE module v1.0 semantics are untouched.
+#
+# Source elements (WeaknessType): Description,
+# Extended_Description, Mapping_Notes (Usage, Reasons),
+# Structure/Status attributes, Alternate_Terms,
+# Likelihood_Of_Exploit, Functional_Areas, Affected_Resources,
+# Modes_Of_Introduction, Weakness_Ordinalities.
+#################################################################
+
+cwe:CWEEnrichmentOntology a owl:Ontology ;
+    rdfs:label "KGCS CWE Enrichment Module v1.0" ;
+    rdfs:comment "Node-property enrichment of kgcs:Weakness from the MITRE CWE XML catalog (XSD v7.3): definitional text, mapping guidance, maturity/structure metadata, and enum-controlled facets. Extends cwe-ontology-v1.0 without modifying it." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> ,
+                <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+
+#################################################################
+# Datatype Properties — definitional text (XSD: required/optional)
+#################################################################
+
+cwe:description a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "description" ;
+    rdfs:comment "Short definition of the weakness (XSD Weakness/Description, required; plain string in source)." .
+
+cwe:extended_description a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "extended description" ;
+    rdfs:comment "Additional detail beyond the core definition (XSD Weakness/Extended_Description, optional). Source is StructuredTextType (embedded XHTML); flattened to plain text at ETL per mapping doc." .
+
+#################################################################
+# Datatype Properties — mapping guidance (XSD: Mapping_Notes, required)
+#################################################################
+
+cwe:mapping_usage a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping usage" ;
+    rdfs:comment "Whether this CWE is a legitimate target for mapping real-world vulnerabilities (XSD Mapping_Notes/Usage). Vocabulary (UsageEnumeration): Allowed, Allowed-with-Review, Discouraged, Prohibited." .
+
+cwe:mapping_reasons a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "mapping reasons" ;
+    rdfs:comment "Reason types qualifying the mapping usage (XSD Mapping_Notes/Reasons/Reason/@Type). Multi-valued. Vocabulary (ReasonEnumeration): Abstraction, Category, View, Deprecated, Potential Deprecation, Frequent Misuse, Frequent Misinterpretation, Multiple Use, CWE Overlap, Acceptable-Use, Potential Major Changes, Other." .
+
+#################################################################
+# Datatype Properties — entry metadata (XSD: required attributes)
+#################################################################
+
+cwe:structure a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "structure" ;
+    rdfs:comment "Structural nature of the weakness (XSD Weakness/@Structure). Vocabulary (StructureEnumeration): Simple, Chain, Composite." .
+
+cwe:status a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "status" ;
+    rdfs:comment "Maturity of the entry (XSD Weakness/@Status). Vocabulary (StatusEnumeration): Deprecated, Draft, Incomplete, Obsolete, Stable, Usable. Deprecated/Obsolete entries load flagged; agent-facing templates must exclude them." .
+
+#################################################################
+# Datatype Properties — enum-controlled facets (XSD: optional)
+#################################################################
+
+cwe:alternate_terms a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "alternate terms" ;
+    rdfs:comment "Other names this weakness is known by, e.g. 'XSS' for CWE-79 (XSD Alternate_Terms/Alternate_Term/Term). Multi-valued; term strings only, per-term descriptions are not loaded." .
+
+cwe:likelihood_of_exploit a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "likelihood of exploit" ;
+    rdfs:comment "MITRE-curated coarse exploit likelihood (XSD Likelihood_Of_Exploit). Vocabulary (LikelihoodEnumeration): High, Medium, Low, Unknown. Weakness-level editorial signal; provenance is distinct from vulnerability-level scores (CVSS) and from probabilistic feeds (EPSS)." .
+
+cwe:functional_areas a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "functional areas" ;
+    rdfs:comment "Functional areas where the weakness typically occurs (XSD Functional_Areas/Functional_Area). Multi-valued; values from FunctionalAreaEnumeration (e.g. Authentication, Cryptography, Memory Management, Not Functional-Area-Specific)." .
+
+cwe:affected_resources a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "affected resources" ;
+    rdfs:comment "System resources an exploit can affect (XSD Affected_Resources/Affected_Resource). Multi-valued. Vocabulary (ResourceEnumeration): CPU, File or Directory, Memory, System Process, Other." .
+
+cwe:modes_of_introduction a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "modes of introduction" ;
+    rdfs:comment "Product life-cycle phases in which the weakness may be introduced (XSD Modes_Of_Introduction/Introduction/Phase). Multi-valued, deduplicated at ETL; per-phase notes are not loaded. Values from PhaseEnumeration (e.g. Architecture and Design, Implementation, Operation)." .
+
+cwe:ordinalities a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Weakness ;
+    rdfs:range xsd:string ;
+    rdfs:label "ordinalities" ;
+    rdfs:comment "How the weakness arises relative to others (XSD Weakness_Ordinalities/Weakness_Ordinality/Ordinality). Multi-valued, deduplicated at ETL; descriptions are not loaded. Vocabulary (OrdinalityEnumeration): Primary, Resultant, Indirect." .
