@@ -4,6 +4,27 @@ The **KGCS standard**: the single source of truth for semantics and contracts. E
 
 **KGCS** (Knowledge Graph for CyberSecurity) is a deterministic grounding layer that lets AI systems reason about cybersecurity without hallucination. Agents answer by following an explicit causal chain through the knowledge graph — `CPE → CVE/CVSS → CWE → CAPEC → ATT&CK → {D3FEND, CAR, SHIELD, ENGAGE}` — never by guessing.
 
+## The causal chain
+
+```mermaid
+flowchart LR
+    CPE --> CVE["CVE / CVSS"]
+    CVE --> CWE
+    CWE --> CAPEC
+    CAPEC --> ATTACK["ATT&CK"]
+    ATTACK --> D3FEND
+    ATTACK --> CAR
+    ATTACK --> SHIELD
+    ATTACK --> ENGAGE
+
+    classDef frozen fill:#1F4E79,color:#fff,stroke:#2E6CB5;
+    class CPE,CVE,CWE,CAPEC,ATTACK frozen;
+```
+
+Every standard module, SHACL shape and contract in this repo exists to make this chain
+traversable and enforceable — no shortcut edges, no merged identifiers, full provenance
+per hop.
+
 ## Layout
 
 - `ontology/core/` — core OWL ontology (v1.0, **frozen**)
