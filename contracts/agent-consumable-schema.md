@@ -15,7 +15,7 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 
 - Platform: `cpeUri`, `cpeNameId`, `part`, `vendor`, `product`, `version`
 - PlatformConfiguration: `matchCriteriaId`, `criteria`, version-bound fields, `configStatus`
-- Vulnerability: `cveId`, `published`, `lastModified`
+- Vulnerability: `cveId`, `published`, `lastModified` — `published` and `lastModified` are stored as ISO-8601 **strings** exactly as NVD delivers them (e.g. `2024-01-15T10:00:00.000`), not as Neo4j temporal values. `WHERE v.published >= datetime('2024-01-01')` silently returns 0 rows; compare string against string (`WHERE v.published >= '2024-01-01'`). The OWL/SHACL type stays `xsd:dateTime` (semantic layer); the divergence is recorded in `shapes/README.md`.
 - VulnerabilityConfiguration: `vcId`, `operator`, `negate` (NVD applicability layer; `cve-applicability-v1.0.owl`, v1.1)
 - VulnerabilityConfigurationNode: `vcnId`, `operator`, `negate` (v1.1)
 - Weakness: `cweId`, `abstraction`; **v1.1 enrichment** (`cwe-enrichment-v1.0.owl`, requires the enrichment-aware `load_cwe.py`): `description`, `mappingUsage`, `structure`, `status` required; `extendedDescription`, `mappingReasons`, `alternateTerms`, `likelihoodOfExploit`, `functionalAreas`, `affectedResources`, `modesOfIntroduction`, `ordinalities` optional
@@ -34,6 +34,7 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 ## Relationship Types (canonical)
 
 - `AFFECTS`: (Vulnerability)-[:AFFECTS]->(PlatformConfiguration)
+- `MATCHES_PLATFORM`: (PlatformConfiguration)-[:MATCHES_PLATFORM]->(Platform) — OWL `cpe:matchesPlatform`; CPEMatch expansion written by `load_cpe.py` (was missing from this list)
 - `HAS_CONFIGURATION`: (Vulnerability)-[:HAS_CONFIGURATION]->(VulnerabilityConfiguration)
 - `HAS_NODE`: (VulnerabilityConfiguration)-[:HAS_NODE]->(VulnerabilityConfigurationNode)
 - `MATCHES_CRITERIA`: (VulnerabilityConfigurationNode)-[:MATCHES_CRITERIA]->(PlatformConfiguration)
@@ -42,7 +43,7 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - `REFERENCES`: (Vulnerability)-[:REFERENCES]->(Reference)
 - `DEMONSTRATED_BY`: (Weakness)-[:DEMONSTRATED_BY]->(AttackPattern) — OWL `kgcs:exploited_by`; the graph edge name is `DEMONSTRATED_BY` (`load_capec.py`, SH-CORE-04). v1.0 of this document listed it as `EXPLOITED_BY`, a name no loader writes.
 - `CHILD_OF`: (AttackPattern)-[:CHILD_OF]->(AttackPattern) — OWL `capec:childOf`; CAPEC abstraction hierarchy used by `inherited_via_parent_capec` mappings
-- `IMPLEMENTED_AS`: (AttackPattern)-[:IMPLEMENTED_AS]->(Technique)
+- `IMPLEMENTS`: (AttackPattern)-[:IMPLEMENTS]->(Technique) — OWL `kgcs:implemented_as` (naming layers are not 1:1); written by `load_attck.py` for parent techniques only, SH-CORE-05. v1.0 of this document listed it as `IMPLEMENTED_AS`, a name no loader writes.
 - `PART_OF`: (Technique)-[:PART_OF]->(Tactic)
 - `SUBTECHNIQUE_OF`: (SubTechnique)-[:SUBTECHNIQUE_OF]->(Technique)
 - `MITIGATED_BY`: (Technique)-[:MITIGATED_BY]->(DefensiveTechnique)
