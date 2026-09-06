@@ -1,0 +1,13 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe:    <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# affects_backed_by_applicability: the only backing leaf is a context (vulnerable=false) criterion.
+fx:pc-2 a kgcs:PlatformConfiguration ;
+    cpe:matchCriteriaId "2C3D4E5F-6A7B-4C8D-9E0F-1A2B3C4D5E6F" ;
+    cpe:criteria "cpe:2.3:o:vendor:os:*:*:*:*:*:*:*:*" ;
+    cpe:configStatus "Active" .
+fx:vcn-1 cve:matches_context_criteria fx:pc-2 .
+fx:cve-1 cve:affects fx:pc-2 .

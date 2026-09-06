@@ -1,0 +1,13 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cwe:    <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec:  <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# Impact vocabularies are per standard: a CWE impact string on a CAPEC consequence.
+fx:capec-63-c2 a capec:Consequence ;
+    capec:consequence_id "CAPEC-63-C2" ;
+    capec:scope "Confidentiality" ;
+    capec:technicalImpact "Read Application Data" .

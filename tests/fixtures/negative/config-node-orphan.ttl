@@ -1,0 +1,10 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe:    <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# configuration_nodes_have_parent: a node with no HAS_NODE parent.
+fx:vcn-orphan a cve:VulnerabilityConfigurationNode ;
+    cve:vcnId "CVE-2024-0001::CFG::1::NODE::0" ;
+    cve:operator "OR" .

@@ -1,0 +1,15 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cwe:    <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec:  <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# cwe.shacl v1.1: description is required (CWE XSD) — enrichment minCount 1.
+fx:cwe-20 a kgcs:Weakness ;
+    cwe:cweId "CWE-20" ;
+    cwe:abstraction "Class" ;
+    cwe:mapping_usage "Discouraged" ;
+    cwe:structure "Simple" ;
+    cwe:status "Stable" .

@@ -1,0 +1,18 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe:    <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# affects_backed_by_applicability: the only backing leaf sits under a negated node.
+fx:pc-2 a kgcs:PlatformConfiguration ;
+    cpe:matchCriteriaId "2C3D4E5F-6A7B-4C8D-9E0F-1A2B3C4D5E6F" ;
+    cpe:criteria "cpe:2.3:a:vendor:other:*:*:*:*:*:*:*:*" ;
+    cpe:configStatus "Active" .
+fx:vcn-2 a cve:VulnerabilityConfigurationNode ;
+    cve:vcnId "CVE-2024-0001::CFG::0::NODE::1" ;
+    cve:operator "OR" ;
+    cve:negate true ;
+    cve:matches_vulnerable_criteria fx:pc-2 .
+fx:vc-1 cve:has_node fx:vcn-2 .
+fx:cve-1 cve:affects fx:pc-2 .
