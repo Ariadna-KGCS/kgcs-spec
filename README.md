@@ -28,22 +28,33 @@ per hop.
 ## Layout
 
 - `ontology/core/` — core OWL ontology (v1.0, **frozen**)
-- `ontology/standards/` — per-standard OWL modules: CPE, CVE, CVSS, CWE, CAPEC, ATT&CK, D3FEND, CAR, SHIELD, ENGAGE (v1.0, **frozen**)
-- `ontology/extensions/` — versioned extension modules (asset extension v1.0 frozen; new semantics land here as new versions)
-- `shapes/` — SHACL shapes per standard + profiles and rule-engine spec
+- `ontology/standards/` — per-standard OWL modules: CPE, CVE, CVSS, CWE, CAPEC, ATT&CK, D3FEND, CAR, SHIELD, ENGAGE (v1.0, **frozen**), plus versioned modules scoped to one standard (`cwe-enrichment`, `cwe-consequences`, `capec-consequences`, `cve-applicability`)
+- `ontology/extensions/` — versioned cross-cutting modules: asset extension (v1.0, frozen), ATT&CK–core alignment, graph labels, build metadata
+- `shapes/` — SHACL shapes per standard + rule-engine spec
 - `mappings/` — standard→OWL mapping docs + coverage matrix
 - `contracts/` — machine-readable contracts (JSON Schema): graph schema for agents, request/response envelopes
-- `docs/` — namespace policy, model documentation, glossary
+- `docs/` — namespace policy, model documentation, glossary, ADRs
+- `tests/` — validation harness (`python -m pytest`): parse, meta-SHACL, OWL↔SHACL alignment, JSON Schema, ABox fixtures with negative cases
 
 ## Rules
 
 - Frozen v1.0 artifacts are never modified; successors are new versioned files.
+- Module location: a versioned module scoped to one standard lives in `ontology/standards/<std>-<module>-vX.Y.owl` and declares its terms in that standard's namespace; a cross-cutting module lives in `ontology/extensions/`. Frozen files are never moved.
 - The causal chain `CPE → CVE/CVSS → CWE → CAPEC → ATT&CK → {D3FEND, CAR, SHIELD, ENGAGE}` is part of the standard: no shortcut edges.
 - Every change ships as a tagged release with a CHANGELOG entry; consumers (`kgcs-pipeline`, `kgcs-server`) upgrade by moving their pin.
 
 ## Status
 
-**v1.0.0** — frozen KGCS v1.0 baseline, migrated verbatim from the seed repo (OWL byte-identical). See `CHANGELOG.md`.
+**v1.0.0** — frozen KGCS v1.0 baseline, migrated verbatim from the seed repo (OWL byte-identical). A v1.1.0 candidate (enrichment, consequences, alignment and applicability modules, validation harness) is `[Unreleased]` in `CHANGELOG.md`.
+
+## Validation
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The harness fails on any file that parses to zero triples, on any shape reference that no OWL module declares, and on any fixture individual that does not conform. The inference mode is fixed (`tests/conftest.py`, `INFERENCE_MODE`).
 
 ## License
 

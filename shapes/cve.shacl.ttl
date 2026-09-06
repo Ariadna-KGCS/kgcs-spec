@@ -1,15 +1,27 @@
-# KGCS CVE SHACL Shapes v1.0
+# KGCS CVE SHACL Shapes v1.1
 #
-# Validates Vulnerability and Reference nodes against
-# the CVE ontology (standards/cve/cve-ontology-v1.0.owl).
+# Validates Vulnerability, Reference and NVD applicability nodes against
+# the CVE ontology (ontology/standards/cve-ontology-v1.0.owl) and the CVE
+# applicability module (ontology/standards/cve-applicability-v1.0.owl).
 #
 # Source standard: NIST NVD CVE JSON 2.0
 # Enforcement level: STRICT (reject at ingest)
+#
+# v1.1: adds the applicability-layer shapes. They encode, one to one, the
+# three post-load Cypher checks of kgcs-pipeline
+# validation/validate_all_standards.py that concern this layer -
+# affects_backed_by_applicability, expanded_criteria_have_platform_targets,
+# configuration_nodes_have_parent - plus the identity keys that
+# init_constraints.py declares unique (vcId, vcnId). No other invariant is
+# introduced. The SPARQL constraint requires a SHACL-SPARQL capable
+# validator (pySHACL is one).
 
 @prefix sh:    <http://www.w3.org/ns/shacl#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
 @prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
 @prefix cve:   <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cpe:   <http://www.motherhacker.me/kgcs/ontology/cpe#> .
 
 
 # ---------------------------------------------------------------------------
@@ -80,4 +92,153 @@ cve:ReferenceShape
         sh:minLength 7 ;
         sh:message "Reference must have exactly one referenceUrl." ;
         sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# NVD applicability layer (v1.1, cve-applicability-v1.0.owl)
+#
+#   (Vulnerability)-[:HAS_CONFIGURATION]->(VulnerabilityConfiguration)
+#     -[:HAS_NODE]->(VulnerabilityConfigurationNode)
+#     -[:MATCHES_CRITERIA {vulnerable}]->(PlatformConfiguration)
+#
+# RDF carries the edge flag as cve:matches_vulnerable_criteria (true) /
+# cve:matches_context_criteria (false), both sub-properties of
+# cve:matches_criteria. Paths enumerate the three explicitly
+# (sh:alternativePath) so no sub-property inference is required. Key patterns are derived from the loader
+# (vcId = "<cveId>::CFG::<n>", vcnId = "<vcId>::NODE::<m>") and are Warnings,
+# consistent with the other loader-derived patterns in this repo.
+# ---------------------------------------------------------------------------
+
+# SPARQL prefix declarations for the constraint below (SHACL-SPARQL 1.0).
+cve:CVEShapesPrefixes
+    a owl:Ontology ;
+    sh:declare [
+        sh:prefix "cve" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/cve#"^^xsd:anyURI ;
+    ] .
+
+cve:VulnerabilityConfigurationShape
+    a sh:NodeShape ;
+    sh:targetClass cve:VulnerabilityConfiguration ;
+
+    # vcId: synthetic deterministic key (unique constraint in the graph)
+    sh:property [
+        sh:path cve:vcId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "VulnerabilityConfiguration must have exactly one vcId." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path cve:vcId ;
+        sh:pattern "^CVE-\\d{4}-\\d+::CFG::\\d+$" ;
+        sh:message "vcId should match <cveId>::CFG::<configIndex> (loader-derived key format)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path cve:negate ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+        sh:message "negate must be a single boolean when present." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path cve:operator ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:message "operator must be a single string when present." ;
+        sh:severity sh:Violation ;
+    ] .
+
+cve:VulnerabilityConfigurationNodeShape
+    a sh:NodeShape ;
+    sh:targetClass cve:VulnerabilityConfigurationNode ;
+
+    # vcnId: synthetic deterministic key (unique constraint in the graph)
+    sh:property [
+        sh:path cve:vcnId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "VulnerabilityConfigurationNode must have exactly one vcnId." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path cve:vcnId ;
+        sh:pattern "^CVE-\\d{4}-\\d+::CFG::\\d+::NODE::\\d+$" ;
+        sh:message "vcnId should match <vcId>::NODE::<nodeIndex> (loader-derived key format)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path cve:negate ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+        sh:message "negate must be a single boolean when present." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path cve:operator ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:message "operator must be a single string when present." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # configuration_nodes_have_parent: exactly one HAS_NODE parent
+    sh:property [
+        sh:path [ sh:inversePath cve:has_node ] ;
+        sh:class cve:VulnerabilityConfiguration ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Every VulnerabilityConfigurationNode has exactly one HAS_NODE parent (post-load check configuration_nodes_have_parent)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # expanded_criteria_have_platform_targets: every criterion reached from
+    # this node that expands via MATCHES_PLATFORM resolves to a Platform with
+    # canonical identifiers (cpeUri, cpeNameId)
+    sh:property [
+        sh:path ( [ sh:alternativePath ( cve:matches_criteria
+                                         cve:matches_vulnerable_criteria
+                                         cve:matches_context_criteria ) ]
+                  cpe:matchesPlatform ) ;
+        sh:class kgcs:Platform ;
+        sh:node [
+            a sh:NodeShape ;
+            sh:property [ sh:path cpe:cpeUri ; sh:minCount 1 ; ] ;
+            sh:property [ sh:path cpe:cpeNameId ; sh:minCount 1 ; ] ;
+        ] ;
+        sh:message "Every applicability criterion that expands via MATCHES_PLATFORM must resolve to a Platform with cpeUri and cpeNameId (post-load check expanded_criteria_have_platform_targets)." ;
+        sh:severity sh:Violation ;
+    ] .
+
+# affects_backed_by_applicability: every AFFECTS edge is backed by a
+# non-negated vulnerable applicability leaf. Mirrors the Cypher check:
+#   MATCH (v)-[:AFFECTS]->(pc) WHERE NOT EXISTS {
+#     (v)-[:HAS_CONFIGURATION]->(vc)-[:HAS_NODE]->(vcn)-[mc:MATCHES_CRITERIA]->(pc)
+#     WHERE mc.vulnerable = true AND coalesce(vc.negate,false) = false
+#       AND coalesce(vcn.negate,false) = false }
+cve:AffectsBackedByApplicabilityShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Vulnerability ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes cve:CVEShapesPrefixes ;
+        sh:message "Every AFFECTS edge must be backed by a non-negated vulnerable applicability leaf (post-load check affects_backed_by_applicability)." ;
+        sh:severity sh:Violation ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this cve:affects ?value .
+                BIND (cve:affects AS ?path)
+                FILTER NOT EXISTS {
+                    $this cve:has_configuration ?vc .
+                    ?vc cve:has_node ?vcn .
+                    ?vcn cve:matches_vulnerable_criteria ?value .
+                    FILTER NOT EXISTS { ?vc cve:negate true }
+                    FILTER NOT EXISTS { ?vcn cve:negate true }
+                }
+            }
+        """ ;
     ] .

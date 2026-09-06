@@ -1,0 +1,96 @@
+@prefix labels: <http://www.motherhacker.me/kgcs/ontology/graph-labels#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix car: <http://www.motherhacker.me/kgcs/ontology/car#> .
+@prefix cve: <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix d3fend: <http://www.motherhacker.me/kgcs/ontology/d3fend#> .
+@prefix engage: <http://www.motherhacker.me/kgcs/ontology/engage#> .
+@prefix shield: <http://www.motherhacker.me/kgcs/ontology/shield#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Cross-cutting module declaring the seven graph-layer label
+# properties that the Neo4j loaders set on every node and that
+# the SHACL shapes already constrain, but that no frozen v1.0
+# module ever declared: attack:name, attack:phaseName,
+# car:title, cve:referenceUrl, d3fend:name, engage:name,
+# shield:name (shapes/README.md, "v1.1 Candidates - OWL label
+# properties").
+#
+# Each property keeps the namespace of the standard whose loader
+# produces it, so the existing sh:path values resolve unchanged
+# and provenance stays per-source. Graph-layer property names
+# are identical (camelCase): name, phaseName, title, referenceUrl.
+#
+# Design choice recorded: per-namespace datatype properties
+# rather than a shared rdfs:label. rdfs:label is an annotation
+# property with no domain and no datatype; the shapes need
+# sh:datatype xsd:string and per-standard cardinality, and the
+# graph stores the value as a plain node property. Frozen files
+# untouched. As a cross-cutting module it declares its own
+# ontology IRI (labels:, namespace-policy-v1.1 section 3); it
+# declares no term there — every term below lives in its
+# standard's namespace.
+#################################################################
+
+labels:GraphLabelsOntology a owl:Ontology ;
+    rdfs:label "KGCS Graph Labels Module v1.0" ;
+    rdfs:comment "Declares the graph-layer label/title datatype properties used by the Neo4j loaders and constrained by the SHACL shapes but absent from the frozen v1.0 standard modules. Per-standard namespaces preserved; no frozen module modified." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> ,
+                <http://www.motherhacker.me/kgcs/ontology/attack#> ,
+                <http://www.motherhacker.me/kgcs/ontology/car#> ,
+                <http://www.motherhacker.me/kgcs/ontology/cve#> ,
+                <http://www.motherhacker.me/kgcs/ontology/d3fend#> ,
+                <http://www.motherhacker.me/kgcs/ontology/engage#> ,
+                <http://www.motherhacker.me/kgcs/ontology/shield#> .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+attack:name a owl:DatatypeProperty ;
+    rdfs:domain attack:Technique ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    rdfs:comment "Human-readable ATT&CK technique or sub-technique name (STIX attack-pattern.name). Graph property: name. Domain attack:Technique covers attack:SubTechnique via the frozen subclass axiom." .
+
+attack:phaseName a owl:DatatypeProperty ;
+    rdfs:domain attack:Tactic ;
+    rdfs:range xsd:string ;
+    rdfs:label "phase name" ;
+    rdfs:comment "ATT&CK tactic shortname as used in kill_chain_phases.phase_name (e.g. execution). Join key for PART_OF in the loader. Graph property: phaseName." .
+
+car:title a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DetectionAnalytic ;
+    rdfs:range xsd:string ;
+    rdfs:label "title" ;
+    rdfs:comment "Human-readable CAR analytic title. Graph property: title." .
+
+cve:referenceUrl a owl:DatatypeProperty ;
+    rdfs:domain kgcs:Reference ;
+    rdfs:range xsd:string ;
+    rdfs:label "reference URL" ;
+    rdfs:comment "URL of an NVD CVE reference record (cve.references[].url). Graph property: referenceUrl." .
+
+d3fend:name a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DefensiveTechnique ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    rdfs:comment "Human-readable D3FEND defensive technique name (rdfs:label of the D3FEND OWL class). Graph property: name." .
+
+engage:name a owl:DatatypeProperty ;
+    rdfs:domain kgcs:EngagementConcept ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    rdfs:comment "Human-readable MITRE Engage activity, approach or goal name. Graph property: name." .
+
+shield:name a owl:DatatypeProperty ;
+    rdfs:domain kgcs:DeceptionTechnique ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    rdfs:comment "Human-readable MITRE SHIELD technique name. Graph property: name. Domain follows the graph label and shield.shacl.ttl (kgcs:DeceptionTechnique); the frozen SHIELD module's subclass axiom points at kgcs:DefensiveTechnique instead - recorded v1.0 deviation (shapes/README.md)." .

@@ -56,7 +56,7 @@
       "type": "object",
       "required": ["value", "basis"],
       "additionalProperties": false,
-      "description": "Confidence computation per docs/05-agents/confidence-model/spec.md.",
+      "description": "Confidence computation per the confidence-model spec maintained in kgcs-server.",
       "properties": {
         "value": {
           "type": "number",

@@ -1,0 +1,70 @@
+@prefix build: <http://www.motherhacker.me/kgcs/ontology/build#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Cross-cutting provenance module: the single build-metadata
+# node the loader writes at the end of a full load, so that a
+# graph (and a dump restored from it) self-describes which spec
+# release, which pipeline commit and which source snapshots
+# produced it (ariadna-org/ROADMAP.md, M0; kgcs-explorer's first
+# freshness requirement).
+#
+# Minimal by decision: one class, four datatype properties, no
+# object properties, no topology change. Per-source snapshots
+# are member-wise "<SOURCE>=<snapshot>" strings on one
+# multi-valued property; the per-source DataSourceVersion nodes
+# planned for F7 (incremental ETL) supersede this when they
+# land. Namespace `build:` is added by
+# docs/namespace-policy-v1.1.md.
+#
+# Graph label: BuildMetadata. Exactly one node per graph is a
+# post-load invariant (pipeline), not expressible as a plain
+# SHACL node constraint.
+#################################################################
+
+build:BuildMetadataOntology a owl:Ontology ;
+    rdfs:label "KGCS Build Metadata Module v1.0" ;
+    rdfs:comment "Self-description of a loaded KGCS graph: spec release, pipeline commit, build timestamp and the source snapshots that produced it. Written by the loader at load time; read by explorers and agents for freshness and provenance." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+build:BuildMetadata a owl:Class ;
+    rdfs:label "Build Metadata" ;
+    rdfs:comment "The one node that describes how the current graph was built. Graph label: BuildMetadata." .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+build:spec_version a owl:DatatypeProperty ;
+    rdfs:domain build:BuildMetadata ;
+    rdfs:range xsd:string ;
+    rdfs:label "spec version" ;
+    rdfs:comment "kgcs-spec release the loader was pinned to (SPEC_VERSION, semantic version, e.g. 1.1.0). Graph property: specVersion." .
+
+build:build_timestamp a owl:DatatypeProperty ;
+    rdfs:domain build:BuildMetadata ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "build timestamp" ;
+    rdfs:comment "UTC instant at which the full load completed. Graph property: buildTimestamp." .
+
+build:pipeline_commit a owl:DatatypeProperty ;
+    rdfs:domain build:BuildMetadata ;
+    rdfs:range xsd:string ;
+    rdfs:label "pipeline commit" ;
+    rdfs:comment "Git commit hash (7-40 hex characters) of kgcs-pipeline that performed the load. Graph property: pipelineCommit." .
+
+build:source_snapshot a owl:DatatypeProperty ;
+    rdfs:domain build:BuildMetadata ;
+    rdfs:range xsd:string ;
+    rdfs:label "source snapshot" ;
+    rdfs:comment "One value per loaded source, formatted \"<SOURCE>=<snapshot>\" where SOURCE is one of CPE, CVE, CVSS, CWE, CAPEC, ATTCK, D3FEND, CAR, SHIELD, ENGAGE and snapshot is the feed version or download timestamp recorded by the downloader (e.g. \"CWE=4.20\", \"CVE=2026-09-01T03:00:00Z\"). Graph property: sourceSnapshots (string array)." .

@@ -16,8 +16,11 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - Platform: `cpeUri`, `cpeNameId`, `part`, `vendor`, `product`, `version`
 - PlatformConfiguration: `matchCriteriaId`, `criteria`, version-bound fields, `configStatus`
 - Vulnerability: `cveId`, `published`, `lastModified`
-- Weakness: `cweId`, `abstraction`
+- VulnerabilityConfiguration: `vcId`, `operator`, `negate` (NVD applicability layer; `cve-applicability-v1.0.owl`, v1.1)
+- VulnerabilityConfigurationNode: `vcnId`, `operator`, `negate` (v1.1)
+- Weakness: `cweId`, `abstraction`; **v1.1 enrichment** (`cwe-enrichment-v1.0.owl`, requires the enrichment-aware `load_cwe.py`): `description`, `mappingUsage`, `structure`, `status` required; `extendedDescription`, `mappingReasons`, `alternateTerms`, `likelihoodOfExploit`, `functionalAreas`, `affectedResources`, `modesOfIntroduction`, `ordinalities` optional
 - AttackPattern: `capecId`
+- Consequence: `consequenceId`, `scopes`, `impacts`, `likelihood`, `note` (**v1.1**, ADR-0001 sub-node of Weakness or AttackPattern; requires the consequence-aware loaders; leaf annotation, never a hop)
 - Technique: `attackId`
 - SubTechnique: `attackId`
 - Tactic: `attackId`
@@ -26,6 +29,7 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - DeceptionTechnique: `techniqueId` (SHIELD technique identifier)
 - EngagementConcept: `activityId` / `approachId` / `goalId`
 - Score: `scoreId`, `version`, `baseScore`
+- BuildMetadata: `specVersion`, `buildTimestamp`, `pipelineCommit`, `sourceSnapshots` (**v1.1**, `build-metadata-v1.0.owl`; exactly one node per graph, written by the loader at load time; not part of the chain)
 
 ## Relationship Types (canonical)
 
@@ -36,7 +40,8 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - `CAUSED_BY`: (Vulnerability)-[:CAUSED_BY]->(Weakness)
 - `HAS_SCORE`: (Vulnerability)-[:HAS_SCORE]->(Score)
 - `REFERENCES`: (Vulnerability)-[:REFERENCES]->(Reference)
-- `EXPLOITED_BY`: (Weakness)-[:EXPLOITED_BY]->(AttackPattern)
+- `DEMONSTRATED_BY`: (Weakness)-[:DEMONSTRATED_BY]->(AttackPattern) — OWL `kgcs:exploited_by`; the graph edge name is `DEMONSTRATED_BY` (`load_capec.py`, SH-CORE-04). v1.0 of this document listed it as `EXPLOITED_BY`, a name no loader writes.
+- `CHILD_OF`: (AttackPattern)-[:CHILD_OF]->(AttackPattern) — OWL `capec:childOf`; CAPEC abstraction hierarchy used by `inherited_via_parent_capec` mappings
 - `IMPLEMENTED_AS`: (AttackPattern)-[:IMPLEMENTED_AS]->(Technique)
 - `PART_OF`: (Technique)-[:PART_OF]->(Tactic)
 - `SUBTECHNIQUE_OF`: (SubTechnique)-[:SUBTECHNIQUE_OF]->(Technique)
@@ -44,10 +49,11 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - `DETECTED_BY`: (Technique)-[:DETECTED_BY]->(DetectionAnalytic)
 - `COUNTERED_BY`: (Technique)-[:COUNTERED_BY]->(DeceptionTechnique)
 - `DISRUPTS`: (EngagementConcept)-[:DISRUPTS]->(Technique)
+- `HAS_CONSEQUENCE`: (Weakness)-[:HAS_CONSEQUENCE]->(Consequence), (AttackPattern)-[:HAS_CONSEQUENCE]->(Consequence) (**v1.1**, ADR-0001)
 
 ## Constraints & Indexes
 
-- Unique constraints on external IDs: `cpeUri`, `matchCriteriaId`, `cveId`, `cweId`, `capecId`, `attackId`, `d3fendId`, `analyticId`, `scoreId`, plus SHIELD/ENGAGE module identifiers (`techniqueId`, `tacticId`, `opportunityId`, `useCaseId`, `procedureId`, `activityId`, `approachId`, `goalId`, `refId`, `eav_id`).
+- Unique constraints on external IDs: `cpeUri`, `matchCriteriaId`, `cveId`, `cweId`, `capecId`, `attackId`, `d3fendId`, `analyticId`, `scoreId`, `vcId`, `vcnId`, `consequenceId` (v1.1), plus SHIELD/ENGAGE module identifiers (`techniqueId`, `tacticId`, `opportunityId`, `useCaseId`, `procedureId`, `activityId`, `approachId`, `goalId`, `refId`, `eav_id`).
 - `uri` indexes exist for resource resolution where applicable.
 
 ## Traversal Invariants (agent requirements)
@@ -55,8 +61,9 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 1. Causal chain MUST be followed: PlatformConfiguration ← Vulnerability → Weakness → AttackPattern → Technique → {DefensiveTechnique, DetectionAnalytic, DeceptionTechnique, EngagementConcept}.
 2. No direct shortcuts are allowed (e.g., PlatformConfiguration → Weakness without passing through Vulnerability).
 3. Agents must use parameterized, read-only Cypher templates supplied by the orchestrator; freeform Cypher is disallowed.
-4. Every response must include `provenance` (list of source IDs and sources) and `confidence` (object per `docs/05-agents/confidence-model/spec.md`).
-5. `AFFECTS` is a compatibility projection over vulnerable applicability leaves, not the complete CVE boolean expression.
+4. Every response must include `provenance` (list of source IDs and sources) and `confidence` (object per the confidence-model spec maintained in `kgcs-server`; the envelope shape is `contracts/agent-consumable-schema.json`).
+5. `AFFECTS` is a compatibility projection over vulnerable applicability leaves, not the complete CVE boolean expression. The full expression is the applicability layer `HAS_CONFIGURATION → HAS_NODE → MATCHES_CRITERIA {vulnerable}` (`mappings/cve-applicability-to-owl-v1.0.md`); it refines the Vulnerability → PlatformConfiguration hop and is never presented as a hop of the chain.
+6. `Consequence` nodes are leaf annotations: no template may traverse through one (ADR-0001).
 
 ## Example Agent Response JSON Schema (excerpt)
 

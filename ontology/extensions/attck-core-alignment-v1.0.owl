@@ -1,0 +1,91 @@
+@prefix align: <http://www.motherhacker.me/kgcs/ontology/attck-core-alignment#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Cross-cutting alignment module between the frozen ATT&CK
+# module v1.0 and the frozen Core ontology v1.0. Declares NO new
+# terms: only alignment axioms between terms that already exist
+# in both modules. Both frozen files are untouched. As a
+# cross-cutting module it declares its own ontology IRI (align:,
+# namespace-policy-v1.1 section 3).
+#
+# Why it exists: attck-ontology-v1.0 re-declares Technique,
+# Tactic, contains_by and subtechnique_of in the attack:
+# namespace, while the core ontology declares Technique, Tactic,
+# belongs_to and subtechnique_of in kgcs:. The SHACL shapes mix
+# the two layers (sh:targetClass kgcs:Technique with
+# sh:class attack:Tactic; SH-CORE-05 requires kgcs:Technique
+# while SH-CORE-07 requires attack:Technique). Without these
+# axioms a node typed in one namespace fails the other layer's
+# constraints.
+#
+# Inference contract: these axioms are declarative. A validator
+# only sees their effect after materialising them (OWL-RL rules
+# cax-eqc1/2, prp-eqp1/2, prp-spo1, scm-*). The reference
+# harness (tests/conftest.py, INFERENCE_MODE = "alignment-owlrl")
+# computes an OWL-RL closure over data + this module ONLY, then
+# runs pySHACL with inference="none". The closure deliberately
+# excludes the frozen standard modules: their multi-class
+# rdfs:domain axioms (attack:attackId has eleven domain classes)
+# would over-type every node under full RDFS/OWL-RL inference.
+# Consumers validating exported graph data must reproduce this
+# mode.
+#
+# Direction check (verified 2026-09-06 against both frozen
+# files): attack:contains_by and kgcs:belongs_to are both
+# Technique -> Tactic, hence owl:equivalentProperty (not
+# owl:inverseOf). attack:contains (Tactic -> Technique) is the
+# frozen inverse of attack:contains_by and is therefore the
+# inverse of kgcs:belongs_to by entailment; no axiom is needed.
+#
+# Known, deliberately unaligned:
+# - attack:SubTechnique. The frozen ATT&CK module declares
+#   attack:SubTechnique rdfs:subClassOf attack:Technique, which
+#   under full OWL semantics entails attack:SubTechnique
+#   rdfs:subClassOf kgcs:Technique once the equivalence below is
+#   asserted. The graph and the shapes do NOT follow that
+#   hierarchy: SubTechnique nodes carry their own label, have no
+#   PART_OF edge and receive no IMPLEMENTS edge, and
+#   attck.shacl.ttl enforces the "^T\d{4}$" identity pattern on
+#   kgcs:Technique. This module asserts nothing about
+#   attack:SubTechnique; the OWL-vs-graph contradiction is an
+#   OWL v1.1 candidate (shapes/README.md).
+# - attack:detected_by (Technique -> attack:DataComponent) vs
+#   kgcs:detected_by (Technique -> kgcs:DetectionAnalytic):
+#   different ranges, different standards (ATT&CK data
+#   components vs CAR analytics). Not aligned on purpose.
+#################################################################
+
+align:ATTCKCoreAlignmentOntology a owl:Ontology ;
+    rdfs:label "KGCS ATT&CK-Core Alignment Module v1.0" ;
+    rdfs:comment "Alignment axioms (owl:equivalentClass, owl:equivalentProperty, rdfs:subPropertyOf) between attck-ontology-v1.0 and core-ontology-v1.0. Declares no new terms; both frozen modules are untouched. Effective only under OWL-RL materialisation (see tests/conftest.py INFERENCE_MODE)." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> ,
+                <http://www.motherhacker.me/kgcs/ontology/attack#> .
+
+#################################################################
+# Class alignment
+#################################################################
+
+attack:Technique owl:equivalentClass kgcs:Technique .
+
+attack:Tactic owl:equivalentClass kgcs:Tactic .
+
+#################################################################
+# Property alignment
+#################################################################
+
+# Technique -> Tactic (graph: PART_OF). Same domain/range direction
+# in both frozen modules; equivalence, not inverse.
+attack:contains_by owl:equivalentProperty kgcs:belongs_to .
+
+# SubTechnique -> Technique (graph: SUBTECHNIQUE_OF).
+# attack:subtechnique_of (attack:SubTechnique -> attack:Technique) is a
+# sub-property of the core kgcs:subtechnique_of (Technique -> Technique).
+attack:subtechnique_of rdfs:subPropertyOf kgcs:subtechnique_of .

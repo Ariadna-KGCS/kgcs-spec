@@ -1,0 +1,61 @@
+# KGCS Build Metadata SHACL Shapes v1.0
+#
+# Validates the BuildMetadata node against the build-metadata module
+# (ontology/extensions/build-metadata-v1.0.owl).
+#
+# Enforcement level: STRICT (reject at ingest)
+#
+# Singleton-ness (exactly one BuildMetadata node per graph) is a post-load
+# Cypher invariant of the pipeline; SHACL node shapes validate each node in
+# isolation and cannot express it.
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix build: <http://www.motherhacker.me/kgcs/ontology/build#> .
+
+
+build:BuildMetadataShape
+    a sh:NodeShape ;
+    sh:targetClass build:BuildMetadata ;
+
+    # spec_version: semantic version of the pinned kgcs-spec release
+    sh:property [
+        sh:path build:spec_version ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^\\d+\\.\\d+\\.\\d+$" ;
+        sh:message "BuildMetadata must have exactly one specVersion in MAJOR.MINOR.PATCH form." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # build_timestamp: completion instant of the full load
+    sh:property [
+        sh:path build:build_timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BuildMetadata must have exactly one buildTimestamp (xsd:dateTime)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # pipeline_commit: git hash of kgcs-pipeline
+    sh:property [
+        sh:path build:pipeline_commit ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9a-f]{7,40}$" ;
+        sh:message "BuildMetadata must have exactly one pipelineCommit (7-40 lowercase hex characters)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # source_snapshot: one "<SOURCE>=<snapshot>" value per loaded source
+    sh:property [
+        sh:path build:source_snapshot ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:pattern "^(CPE|CVE|CVSS|CWE|CAPEC|ATTCK|D3FEND|CAR|SHIELD|ENGAGE)=.+$" ;
+        sh:message "BuildMetadata.sourceSnapshots values must be <SOURCE>=<snapshot> with SOURCE one of the ten KGCS standards." ;
+        sh:severity sh:Violation ;
+    ] .
