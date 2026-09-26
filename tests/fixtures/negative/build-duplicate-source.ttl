@@ -1,0 +1,11 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix build:  <http://www.motherhacker.me/kgcs/ontology/build#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# build.shacl v1.1: two snapshots for one SOURCE - the node no longer says
+# which CWE release was loaded. Both values are reported.
+fx:build-3 a build:BuildMetadata ;
+    build:spec_version "1.1.0" ;
+    build:build_timestamp "2026-09-26T12:00:00Z"^^xsd:dateTime ;
+    build:pipeline_commit "b681e90" ;
+    build:source_snapshot "CWE=4.20" , "CWE=4.19" , "CAPEC=3.9" .

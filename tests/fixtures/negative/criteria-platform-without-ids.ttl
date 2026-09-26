@@ -1,0 +1,14 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe:    <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# expanded_criteria_have_platform_targets: criterion expands to a node without canonical Platform identifiers.
+fx:pc-3 a kgcs:PlatformConfiguration ;
+    cpe:matchCriteriaId "3D4E5F6A-7B8C-4D9E-8F0A-1B2C3D4E5F6A" ;
+    cpe:criteria "cpe:2.3:a:vendor:product:2.0:*:*:*:*:*:*:*" ;
+    cpe:configStatus "Active" ;
+    cpe:matchesPlatform fx:platform-bad .
+fx:platform-bad cpe:part "a" .
+fx:vcn-1 cve:matches_context_criteria fx:pc-3 .

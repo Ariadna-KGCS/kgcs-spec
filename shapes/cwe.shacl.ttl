@@ -1,10 +1,25 @@
-# KGCS CWE SHACL Shapes v1.0
+# KGCS CWE SHACL Shapes v1.2
 #
-# Validates Weakness nodes against the CWE ontology
-# (standards/cwe/cwe-ontology-v1.0.owl).
+# Validates Weakness and Consequence nodes against the CWE ontology
+# (ontology/standards/cwe-ontology-v1.0.owl), the CWE enrichment
+# module (ontology/standards/cwe-enrichment-v1.0.owl) and the CWE
+# consequences module
+# (ontology/standards/cwe-consequences-v1.0.owl).
 #
-# Source standard: MITRE CWE XML catalog
+# Source standard: MITRE CWE XML catalog (Core Definition XSD v7.3)
 # Enforcement level: STRICT (reject at ingest)
+#
+# v1.1: adds enrichment property shapes (description, mapping
+# guidance, structure/status, enum facets). Properties that are
+# required in the CWE XSD (Description, Mapping_Notes/Usage,
+# @Structure, @Status) are minCount 1: any Weakness loaded by the
+# enrichment-aware loader carries them, and a graph loaded by the
+# pre-enrichment loader is expected to fail until re-ingested.
+#
+# v1.2: adds cwe:ConsequenceShape per ADR-0001 (consequence
+# sub-nodes with synthetic deterministic keys, record grouping
+# preserved). CWE vocabularies only — CAPEC consequences are
+# validated in capec.shacl.ttl with their own enums; never merge.
 
 @prefix sh:    <http://www.w3.org/ns/shacl#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
@@ -15,12 +30,19 @@
 # ---------------------------------------------------------------------------
 # Weakness node shape
 #
-# Every Weakness node must carry:
+# Identity (v1.0):
 #   - cweId: canonical identifier e.g. CWE-79 — unique key
 #   - abstraction: MITRE abstraction level from the fixed vocabulary
 #
 # The MITRE CWE abstraction hierarchy (most→least abstract):
 #   Pillar > Class > Base > Variant > Compound
+#
+# Enrichment (v1.1, cwe-enrichment-v1.0.owl):
+#   - description / extended_description: definitional text
+#   - mapping_usage / mapping_reasons: CWE mapping guidance
+#   - structure / status: entry metadata
+#   - alternate_terms, likelihood_of_exploit, functional_areas,
+#     affected_resources, modes_of_introduction, ordinalities: facets
 # ---------------------------------------------------------------------------
 
 cwe:WeaknessShape
@@ -47,5 +69,229 @@ cwe:WeaknessShape
         sh:maxCount 1 ;
         sh:in ( "Pillar" "Class" "Base" "Variant" "Compound" ) ;
         sh:message "Weakness.abstraction must be one of: Pillar, Class, Base, Variant, Compound." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # ------------------------------------------------------------------
+    # Enrichment v1.1 — definitional text
+    # ------------------------------------------------------------------
+
+    # description: required in XSD (Weakness/Description)
+    sh:property [
+        sh:path cwe:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Weakness must have exactly one non-empty description." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # extended_description: optional, flattened from StructuredText
+    sh:property [
+        sh:path cwe:extended_description ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:message "Weakness.extended_description must be a single string when present." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # ------------------------------------------------------------------
+    # Enrichment v1.1 — mapping guidance (XSD Mapping_Notes, required)
+    # ------------------------------------------------------------------
+
+    sh:property [
+        sh:path cwe:mapping_usage ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Allowed" "Allowed-with-Review" "Discouraged" "Prohibited" ) ;
+        sh:message "Weakness.mapping_usage must be one of: Allowed, Allowed-with-Review, Discouraged, Prohibited." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:mapping_reasons ;
+        sh:datatype xsd:string ;
+        sh:in ( "Abstraction" "Category" "View" "Deprecated"
+                "Potential Deprecation" "Frequent Misuse"
+                "Frequent Misinterpretation" "Multiple Use" "CWE Overlap"
+                "Acceptable-Use" "Potential Major Changes" "Other" ) ;
+        sh:message "Weakness.mapping_reasons values must come from the CWE ReasonEnumeration." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # ------------------------------------------------------------------
+    # Enrichment v1.1 — entry metadata (XSD required attributes)
+    # ------------------------------------------------------------------
+
+    sh:property [
+        sh:path cwe:structure ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Simple" "Chain" "Composite" ) ;
+        sh:message "Weakness.structure must be one of: Simple, Chain, Composite." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:status ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Deprecated" "Draft" "Incomplete" "Obsolete" "Stable" "Usable" ) ;
+        sh:message "Weakness.status must be one of: Deprecated, Draft, Incomplete, Obsolete, Stable, Usable." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # ------------------------------------------------------------------
+    # Enrichment v1.1 — enum-controlled facets (all optional in XSD)
+    # ------------------------------------------------------------------
+
+    # alternate_terms: free strings (no source vocabulary), multi-valued
+    sh:property [
+        sh:path cwe:alternate_terms ;
+        sh:datatype xsd:string ;
+        sh:minLength 1 ;
+        sh:message "Weakness.alternate_terms values must be non-empty strings." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:likelihood_of_exploit ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "High" "Medium" "Low" "Unknown" ) ;
+        sh:message "Weakness.likelihood_of_exploit must be one of: High, Medium, Low, Unknown." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:functional_areas ;
+        sh:datatype xsd:string ;
+        sh:in ( "Authentication" "Authorization" "Code Libraries" "Counters"
+                "Cryptography" "Error Handling" "Interprocess Communication"
+                "File Processing" "Logging" "Memory Management" "Networking"
+                "Number Processing" "Program Invocation" "Protection Mechanism"
+                "Session Management" "Signals" "String Processing"
+                "Not Functional-Area-Specific" "Power" "Clock" ) ;
+        sh:message "Weakness.functional_areas values must come from the CWE FunctionalAreaEnumeration." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:affected_resources ;
+        sh:datatype xsd:string ;
+        sh:in ( "CPU" "File or Directory" "Memory" "System Process" "Other" ) ;
+        sh:message "Weakness.affected_resources values must come from the CWE ResourceEnumeration." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:modes_of_introduction ;
+        sh:datatype xsd:string ;
+        sh:in ( "Policy" "Requirements" "Architecture and Design"
+                "Implementation" "Build and Compilation" "Testing"
+                "Documentation" "Bundling" "Distribution" "Installation"
+                "System Configuration" "Operation" "Patching and Maintenance"
+                "Porting" "Integration" "Manufacturing"
+                "Decommissioning and End-of-Life" ) ;
+        sh:message "Weakness.modes_of_introduction values must come from the CWE PhaseEnumeration." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    sh:property [
+        sh:path cwe:ordinalities ;
+        sh:datatype xsd:string ;
+        sh:in ( "Primary" "Resultant" "Indirect" ) ;
+        sh:message "Weakness.ordinalities values must be one of: Primary, Resultant, Indirect." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Consequence node shape (v1.2, ADR-0001)
+#
+# One node per XSD Common_Consequences/Consequence record of a Weakness,
+# attached via cwe:has_consequence (graph: HAS_CONSEQUENCE). The record's
+# internal Scope x Impact grouping is preserved: scopes/impacts are arrays
+# INSIDE the node, never flattened across records. Leaf annotation only —
+# no agent traversal may pass through a Consequence.
+#
+# Graph label :Consequence is shared with CAPEC (provenance by topology);
+# vocabularies stay source-separated — CWE's 25-value impact enum is
+# validated here, CAPEC's 10-value enum in capec.shacl.ttl. Never merge.
+# ---------------------------------------------------------------------------
+
+cwe:ConsequenceShape
+    a sh:NodeShape ;
+    sh:targetClass cwe:Consequence ;
+
+    # consequence_id: synthetic deterministic key (XSD Consequence_ID is
+    # unpopulated in the real catalog) — CWE-<n>-C<ordinal>, document order
+    sh:property [
+        sh:path cwe:consequence_id ;
+        sh:datatype xsd:string ;
+        sh:pattern "^CWE-\\d+-C\\d+$" ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "Consequence must have exactly one consequenceId matching CWE-N-CM." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # scope: required in XSD (1..N within the record)
+    sh:property [
+        sh:path cwe:scope ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Confidentiality" "Integrity" "Availability" "Access Control"
+                "Accountability" "Authentication" "Authorization"
+                "Non-Repudiation" "Other" ) ;
+        sh:message "Consequence.scopes values must come from the CWE ScopeEnumeration (9 values)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # technical_impact: required in the CWE XSD (1..N within the record) —
+    # unlike CAPEC, where Impact is optional
+    sh:property [
+        sh:path cwe:technical_impact ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Modify Memory" "Read Memory" "Modify Files or Directories"
+                "Read Files or Directories" "Modify Application Data"
+                "Read Application Data" "DoS: Crash, Exit, or Restart"
+                "DoS: Amplification" "DoS: Instability"
+                "DoS: Resource Consumption (CPU)"
+                "DoS: Resource Consumption (Memory)"
+                "DoS: Resource Consumption (Other)"
+                "Execute Unauthorized Code or Commands"
+                "Gain Privileges or Assume Identity"
+                "Bypass Protection Mechanism" "Hide Activities"
+                "Alter Execution Logic" "Quality Degradation"
+                "Unexpected State" "Varies by Context"
+                "Increase Analytical Complexity" "Reduce Maintainability"
+                "Reduce Performance" "Reduce Reliability" "Other" ) ;
+        sh:message "Consequence.impacts values must come from the CWE TechnicalImpactEnumeration (25 values, CWE-specific)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # consequence_likelihood: optional (0..1); XSD LikelihoodEnumeration
+    sh:property [
+        sh:path cwe:consequence_likelihood ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "High" "Medium" "Low" "Unknown" ) ;
+        sh:message "Consequence.likelihood must be one of: High, Medium, Low, Unknown." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # consequence_note: optional (0..1), StructuredText flattened at ETL
+    sh:property [
+        sh:path cwe:consequence_note ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:message "Consequence.note must be a single non-empty string when present." ;
         sh:severity sh:Violation ;
     ] .

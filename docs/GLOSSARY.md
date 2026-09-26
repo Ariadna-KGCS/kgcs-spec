@@ -310,7 +310,7 @@ ThreatActor: "APT-X (HIGH confidence)"
 
 - `architecture.md` (in `kgcs-server`) — 5-phase roadmap
 - `governance.md` (in `kgcs-server`) — Data policies
-- `rag-traversal-templates.md` (in `kgcs-pipeline`) — Approved queries
+- Approved Cypher query templates — `agents/*/cypher_templates.py` (in `kgcs-server`)
 - NVD: <https://nvd.nist.gov/>
 - MITRE ATT&CK: <https://attack.mitre.org/>
 - MITRE CWE: <https://cwe.mitre.org/>

@@ -1,0 +1,188 @@
+# kgcs-spec ABox fixture — one valid individual per node shape in shapes/.
+#
+# Purpose: make every SHACL constraint (minCount, sh:class, sh:pattern, sh:in)
+# bind to at least one focus node, so the harness cannot pass vacuously.
+# Individuals live in the urn:kgcs:fixture: namespace and follow the causal
+# chain CPE -> CVE/CVSS -> CWE -> CAPEC -> ATT&CK -> {D3FEND, CAR, SHIELD, ENGAGE}
+# with no shortcut edges. Property names are the OWL names (snake_case where
+# the module is snake_case, camelCase where the frozen module is camelCase).
+#
+# Type assertions use the core class only where an alignment module
+# (ontology/extensions/*-alignment-v*.owl) entails the standard class; the
+# harness materialises that closure before validation (tests/conftest.py).
+
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cpe:    <http://www.motherhacker.me/kgcs/ontology/cpe#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cvss:   <http://www.motherhacker.me/kgcs/ontology/cvss#> .
+@prefix cwe:    <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec:  <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix d3fend: <http://www.motherhacker.me/kgcs/ontology/d3fend#> .
+@prefix car:    <http://www.motherhacker.me/kgcs/ontology/car#> .
+@prefix shield: <http://www.motherhacker.me/kgcs/ontology/shield#> .
+@prefix engage: <http://www.motherhacker.me/kgcs/ontology/engage#> .
+@prefix build:  <http://www.motherhacker.me/kgcs/ontology/build#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# --- CPE ---------------------------------------------------------------------
+
+fx:platform-1 a kgcs:Platform ;
+    cpe:cpeUri "cpe:2.3:a:vendor:product:1.0:*:*:*:*:*:*:*" ;
+    cpe:cpeNameId "0F7A8E4E-8B7C-4B8E-9A2D-1C2D3E4F5A6B" ;
+    cpe:part "a" ;
+    cpe:vendor "vendor" ;
+    cpe:product "product" ;
+    cpe:version "1.0" .
+
+fx:pc-1 a kgcs:PlatformConfiguration ;
+    cpe:matchCriteriaId "1B2C3D4E-5F6A-4B7C-8D9E-0F1A2B3C4D5E" ;
+    cpe:criteria "cpe:2.3:a:vendor:product:*:*:*:*:*:*:*:*" ;
+    cpe:configStatus "Active" ;
+    cpe:matchesPlatform fx:platform-1 .
+
+# --- CVE / CVSS --------------------------------------------------------------
+
+fx:cve-1 a kgcs:Vulnerability ;
+    cve:cveId "CVE-2024-0001" ;
+    cve:published "2024-01-15T10:00:00Z"^^xsd:dateTime ;
+    cve:lastModified "2024-02-01T09:30:00Z"^^xsd:dateTime ;
+    cve:source "nvd@nist.gov" ;
+    cve:affects fx:pc-1 ;
+    cve:has_configuration fx:vc-1 ;
+    cve:references fx:ref-1 ;
+    cvss:hasScore fx:score-1 ;
+    kgcs:caused_by fx:cwe-79 .
+
+# NVD applicability layer (cve-applicability-v1.0.owl): the AFFECTS edge above
+# is backed by a non-negated vulnerable leaf, as the post-load check requires.
+fx:vc-1 a cve:VulnerabilityConfiguration ;
+    cve:vcId "CVE-2024-0001::CFG::0" ;
+    cve:configIndex 0 ;
+    cve:operator "OR" ;
+    cve:negate false ;
+    cve:has_node fx:vcn-1 .
+
+fx:vcn-1 a cve:VulnerabilityConfigurationNode ;
+    cve:vcnId "CVE-2024-0001::CFG::0::NODE::0" ;
+    cve:nodeIndex 0 ;
+    cve:operator "OR" ;
+    cve:negate false ;
+    cve:matches_vulnerable_criteria fx:pc-1 .
+
+# CAUSED_BY provenance (cve-weakness-provenance-v1.0.owl, ADR-0002): the one
+# edge cve-1 -> cwe-79, assigned by NVD (Primary), a CNA (Secondary) and the
+# CISA ADP (Secondary).
+fx:cb-cve-1-cwe-79 a cve:CausedByStatement ;
+    rdf:subject fx:cve-1 ;
+    rdf:predicate kgcs:caused_by ;
+    rdf:object fx:cwe-79 ;
+    cve:weaknessSources ( "nvd@nist.gov" "secalert@redhat.com" "134c704f-9b21-4f2e-91b3-4a467353bcc0" ) ;
+    cve:weaknessSourceRoles ( "nvd" "cna" "adp" ) ;
+    cve:weaknessTypes ( "Primary" "Secondary" "Secondary" ) .
+
+fx:ref-1 a kgcs:Reference ;
+    cve:referenceUrl "https://example.org/advisory/2024-0001" .
+
+fx:score-1 a cvss:Score ;
+    cvss:scoreId "CVE-2024-0001_3.1" ;
+    cvss:version "3.1" ;
+    cvss:baseScore "7.5"^^xsd:decimal .
+
+# --- CWE (identity + enrichment v1.1 + consequence v1.2) ---------------------
+
+fx:cwe-79 a kgcs:Weakness ;
+    cwe:cweId "CWE-79" ;
+    cwe:abstraction "Base" ;
+    cwe:description "Improper Neutralization of Input During Web Page Generation." ;
+    cwe:mapping_usage "Allowed" ;
+    cwe:structure "Simple" ;
+    cwe:status "Stable" ;
+    cwe:likelihood_of_exploit "High" ;
+    cwe:modes_of_introduction "Implementation" ;
+    kgcs:exploited_by fx:capec-63 ;
+    cwe:has_consequence fx:cwe-79-c1 .
+
+fx:cwe-79-c1 a cwe:Consequence ;
+    cwe:consequence_id "CWE-79-C1" ;
+    cwe:scope "Confidentiality" , "Integrity" ;
+    cwe:technical_impact "Read Application Data" , "Execute Unauthorized Code or Commands" ;
+    cwe:consequence_note "The most common attack performed with cross-site scripting involves the disclosure of information stored in user cookies." .
+
+# --- CAPEC (identity + consequence v1.1) -------------------------------------
+
+fx:capec-63 a kgcs:AttackPattern ;
+    capec:capecId "CAPEC-63" ;
+    capec:name "Cross-Site Scripting (XSS)" ;
+    kgcs:implemented_as fx:t1059 ;
+    capec:hasConsequence fx:capec-63-c1 .
+
+fx:capec-63-c1 a capec:Consequence ;
+    capec:consequence_id "CAPEC-63-C1" ;
+    capec:scope "Confidentiality" ;
+    capec:technicalImpact "Read Data" ;
+    capec:consequenceLikelihood "High" .
+
+# --- ATT&CK ------------------------------------------------------------------
+# Core types only: attck-core-alignment-v1.0.owl entails attack:Technique /
+# attack:Tactic under the harness closure (see tests/conftest.py).
+
+fx:t1059 a kgcs:Technique ;
+    attack:attackId "T1059" ;
+    attack:name "Command and Scripting Interpreter" ;
+    attack:domain "enterprise" ;
+    attack:contains_by fx:ta0002 .
+
+fx:t1059-001 a attack:SubTechnique ;
+    attack:attackId "T1059.001" ;
+    attack:name "PowerShell" ;
+    attack:domain "enterprise" ;
+    attack:subtechnique_of fx:t1059 .
+
+fx:ta0002 a kgcs:Tactic ;
+    attack:attackId "TA0002" ;
+    attack:phaseName "execution" ;
+    attack:domain "enterprise" .
+
+# --- Countermeasure branches -------------------------------------------------
+
+fx:d3-pa a kgcs:DefensiveTechnique ;
+    d3fend:d3fendId "D3-PA" ;
+    d3fend:name "Process Analysis" .
+
+fx:car-2013-01-002 a kgcs:DetectionAnalytic ;
+    car:analyticId "CAR-2013-01-002" ;
+    car:title "Autorun Differences" .
+
+fx:dte0001 a kgcs:DeceptionTechnique ;
+    shield:techniqueId "DTE0001" ;
+    shield:name "Admin Access" .
+
+fx:eac0001 a kgcs:EngagementConcept ;
+    engage:activityId "EAC0001" ;
+    engage:name "API Monitoring" .
+
+fx:eap0001 a kgcs:EngagementConcept ;
+    engage:approachId "EAP0001" ;
+    engage:name "Collect" .
+
+fx:ego0001 a kgcs:EngagementConcept ;
+    engage:goalId "EGO0001" ;
+    engage:name "Expose" .
+
+fx:t1059 kgcs:mitigated_by fx:d3-pa ;
+    kgcs:detected_by fx:car-2013-01-002 ;
+    kgcs:countered_by fx:dte0001 .
+
+fx:eac0001 kgcs:disrupts fx:t1059 .
+
+# --- Build metadata (build-metadata-v1.0.owl) --------------------------------
+
+fx:build-1 a build:BuildMetadata ;
+    build:spec_version "1.1.0" ;
+    build:build_timestamp "2026-09-06T12:00:00Z"^^xsd:dateTime ;
+    build:pipeline_commit "b681e90" ;
+    build:source_snapshot "CWE=4.20" , "CAPEC=3.9" , "D3FEND=1.3.0" ,
+        "ATTCK=download:2026-09-06;modified-max:2026-08-04" , "CVE=2026-09-01T03:00:00Z" .

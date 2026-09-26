@@ -1,0 +1,10 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cwe:    <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec:  <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# SH-CORE-01: AFFECTS must target PlatformConfiguration, never Platform.
+fx:cve-1 cve:affects fx:platform-1 .

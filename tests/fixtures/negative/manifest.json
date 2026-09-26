@@ -1,0 +1,281 @@
+{
+  "shortcut-cve-technique.ttl": {
+    "description": "SH-CORE-02: Vulnerability -> Technique shortcut",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": null,
+        "constraint": "sh:NotConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "affects-platform.ttl": {
+    "description": "SH-CORE-01: AFFECTS targeting a Platform (also unbacked by any applicability leaf)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "cve#affects",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "cve#affects",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "subtechnique-two-parents.ttl": {
+    "description": "SH-CORE-07 (core + attck shapes): SubTechnique with two parents",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:MaxCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:MaxCountConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "weakness-missing-description.ttl": {
+    "description": "cwe.shacl v1.1 enrichment minCount: Weakness without description",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cwe-20",
+        "path": "cwe#description",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "capecid-integer-form.ttl": {
+    "description": "capecId bare integer form rejected by pattern",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:capec-bad",
+        "path": "capec#capecId",
+        "constraint": "sh:PatternConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "consequence-foreign-vocab.ttl": {
+    "description": "CWE impact vocabulary on a CAPEC consequence",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:capec-63-c2",
+        "path": "capec#technicalImpact",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "technique-without-tactic.ttl": {
+    "description": "SH-CORE-06 (core + attck shapes): Technique without Tactic",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:t9999",
+        "path": "attack#contains_by",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t9999",
+        "path": "attack#contains_by",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "affects-unbacked.ttl": {
+    "description": "affects_backed_by_applicability: AFFECTS without applicability leaf",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "cve#affects",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "affects-negated-leaf.ttl": {
+    "description": "affects_backed_by_applicability: backing leaf under negated node",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "cve#affects",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "affects-context-leaf.ttl": {
+    "description": "affects_backed_by_applicability: backing leaf is vulnerable=false",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "cve#affects",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "config-node-orphan.ttl": {
+    "description": "configuration_nodes_have_parent: node without HAS_NODE parent",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:vcn-orphan",
+        "path": "^cve#has_node",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "criteria-platform-without-ids.ttl": {
+    "description": "expanded_criteria_have_platform_targets: MATCHES_PLATFORM target without cpeUri/cpeNameId (nested sh:node results on the target are reported too)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:platform-bad",
+        "path": "cpe#cpeNameId",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:platform-bad",
+        "path": "cpe#cpeUri",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:vcn-1",
+        "path": "(cve#matches_criteria|cve#matches_vulnerable_criteria|cve#matches_context_criteria)/cpe#matchesPlatform",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:vcn-1",
+        "path": "(cve#matches_criteria|cve#matches_vulnerable_criteria|cve#matches_context_criteria)/cpe#matchesPlatform",
+        "constraint": "sh:NodeConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "build-unknown-source.ttl": {
+    "description": "build.shacl: sourceSnapshots token outside the ten standards",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:build-2",
+        "path": "build#source_snapshot",
+        "constraint": "sh:PatternConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "part-of-cross-domain.ttl": {
+    "description": "attck.shacl v1.1 PART_OF domain coherence: enterprise technique linked to a mobile tactic",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:t1059",
+        "path": "attack#contains_by",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-unequal-lists.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance: aligned sources/sourceRoles/types lists of unequal length (ADR-0002)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-2-cwe-79",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-duplicate-statement.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance: two statements for one (CVE, CWE) pair - exactly one edge per pair (ADR-0002)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-1-cwe-79",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-1-cwe-79-dup",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-without-provenance.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance coverage: edge without provenance is a Warning (pre-v1.1 loaders)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-2",
+        "path": "core#caused_by",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Warning"
+      }
+    ]
+  },
+  "build-duplicate-source.ttl": {
+    "description": "build.shacl v1.1: two sourceSnapshots values for one SOURCE (CWE)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:build-3",
+        "path": "build#source_snapshot",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:build-3",
+        "path": "build#source_snapshot",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "subtechnique-cross-domain.ttl": {
+    "description": "attck.shacl v1.1 SUBTECHNIQUE_OF domain coherence: mobile sub-technique under an enterprise parent",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:t1059-099",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "domain-stix-long-form.ttl": {
+    "description": "attck.shacl v1.1 domains vocabulary: STIX long form enterprise-attack rejected (graph uses enterprise|mobile|ics)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ta0099",
+        "path": "attack#domain",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-unknown-role.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance: sourceRoles member outside {nvd, cna, adp}",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-3-cwe-79",
+        "path": "cve#weaknessSourceRoles/rdf:rest*/rdf:first",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  }
+}

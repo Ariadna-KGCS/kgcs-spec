@@ -1,0 +1,12 @@
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# attck.shacl v1.1 SubtechniqueOfDomainCoherenceShape: a mobile sub-technique
+# hung under the enterprise parent T1059 (cross-bundle join). The node is
+# otherwise valid.
+fx:t1059-099 a attack:SubTechnique ;
+    attack:attackId "T1059.099" ;
+    attack:name "Cross-domain sub-technique" ;
+    attack:domain "mobile" ;
+    attack:subtechnique_of fx:t1059 .

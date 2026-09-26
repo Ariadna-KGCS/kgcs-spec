@@ -56,7 +56,7 @@
       "type": "object",
       "required": ["value", "basis"],
       "additionalProperties": false,
-      "description": "Confidence computation per docs/05-agents/confidence-model/spec.md.",
+      "description": "Confidence computation per the confidence-model spec maintained in kgcs-server.",
       "properties": {
         "value": {
           "type": "number",
@@ -125,6 +125,37 @@
   "then": {
     "properties": {
       "provenance": { "minItems": 1 }
+    }
+  },
+  "definitions": {
+    "CausedByEdgeProperties": {
+      "$comment": "v1.1 (kgcs-spec 1.1.0, ADR-0002). Graph-layer properties of the (Vulnerability)-[:CAUSED_BY]->(Weakness) edge; exactly one edge per (CVE, CWE) pair. Not part of the response envelope: referenced by per-agent response schemas and loader tests. The three lists are index-aligned and of equal length; Draft-07 cannot express equal length, which is enforced by shapes/cve.shacl.ttl (cve:CausedByStatementShape) and the pipeline post-load check.",
+      "type": "object",
+      "required": ["sources", "sourceRoles", "types"],
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Raw NVD weaknesses[].source identifiers, verbatim (e.g. nvd@nist.gov, or the CNA's e-mail/UUID). Document order."
+        },
+        "sourceRoles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["nvd", "cna", "adp"] },
+          "description": "Aligned with sources: 'nvd' for nvd@nist.gov, 'adp' for a declared Authorized Data Publisher identifier (today only 134c704f-9b21-4f2e-91b3-4a467353bcc0, CISA ADP), 'cna' for any other assigning source."
+        },
+        "types": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["Primary", "Secondary"] },
+          "description": "Aligned with sources: NVD weaknesses[].type."
+        }
+      },
+      "examples": [
+        { "sources": ["nvd@nist.gov", "secalert@redhat.com", "134c704f-9b21-4f2e-91b3-4a467353bcc0"], "sourceRoles": ["nvd", "cna", "adp"], "types": ["Primary", "Secondary", "Secondary"] }
+      ]
     }
   },
   "examples": [

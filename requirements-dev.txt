@@ -1,0 +1,6 @@
+# Validation harness for kgcs-spec (python -m pytest)
+rdflib>=7.0
+pyshacl>=0.26
+owlrl>=6.0
+jsonschema>=3.2
+pytest>=7

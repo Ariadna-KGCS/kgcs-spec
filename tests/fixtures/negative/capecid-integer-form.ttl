@@ -1,0 +1,12 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix cwe:    <http://www.motherhacker.me/kgcs/ontology/cwe#> .
+@prefix capec:  <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# capecId must be the patterned string CAPEC-<n>, not the bare integer form.
+fx:capec-bad a kgcs:AttackPattern ;
+    capec:capecId "63" ;
+    capec:name "Bad identifier form" .

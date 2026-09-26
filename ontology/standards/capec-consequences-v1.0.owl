@@ -1,0 +1,56 @@
+@prefix capec: <http://www.motherhacker.me/kgcs/ontology/capec#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Versioned consequences gap-module for the frozen CAPEC ontology
+# v1.0. Unlike CWE, the frozen capec-ontology-v1.0.owl already
+# declares capec:Consequence, capec:hasConsequence and the record
+# content properties (capec:scope, capec:technicalImpact,
+# capec:consequenceLikelihood). This module adds ONLY the two
+# properties ADR-0001 needs and v1.0 lacks: the synthetic identity
+# key and the record note. capec-ontology-v1.0.owl remains frozen
+# and untouched.
+#
+# Known v1.0 discrepancy (recorded in ADR-0001, OWL v1.1
+# candidate): the frozen comment on capec:consequenceLikelihood
+# lists "Always, Often, Sometimes, Rare, Unknown"; the CAPEC XSD
+# LikelihoodEnumeration and the real catalog say High, Medium,
+# Low, Unknown. SHACL follows the XSD.
+#
+# Naming: new properties follow the current snake_case module
+# convention; the frozen sibling properties on the same class are
+# camelCase. SHACL sh:path always uses each property's actual OWL
+# name.
+#################################################################
+
+capec:CAPECConsequencesOntology a owl:Ontology ;
+    rdfs:label "KGCS CAPEC Consequences Module v1.0" ;
+    rdfs:comment "Gap properties for sub-node modeling of CAPEC Consequences per ADR-0001: synthetic deterministic consequence_id (CAPEC-<n>-C<ordinal>) and flattened record note. Class and enum-content properties are already declared in the frozen capec-ontology-v1.0.owl." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> ,
+                <http://www.motherhacker.me/kgcs/ontology/capec#> .
+
+#################################################################
+# Datatype Properties — identity
+#################################################################
+
+capec:consequence_id a owl:DatatypeProperty ;
+    rdfs:domain capec:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "consequence id" ;
+    rdfs:comment "Synthetic deterministic key, pattern CAPEC-<n>-C<ordinal> with ordinal in XML document order (the XSD Consequence_ID attribute is unpopulated in the real catalog). Merge key for idempotent refresh; ordinals beyond the current record count per parent are pruned on re-ingest." .
+
+#################################################################
+# Datatype Properties — record content gap
+#################################################################
+
+capec:consequence_note a owl:DatatypeProperty ;
+    rdfs:domain capec:Consequence ;
+    rdfs:range xsd:string ;
+    rdfs:label "consequence note" ;
+    rdfs:comment "Additional commentary about the record (XSD Consequence/Note, 0..1). Source is StructuredTextType; flattened to plain text at ETL per mapping doc. Present in ~27% of real CAPEC records." .

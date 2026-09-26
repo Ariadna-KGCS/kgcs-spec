@@ -400,3 +400,21 @@ SELECT ?technique ?procedure WHERE {
 ## Summary
 
 D3FEND integration into KGCS follows a **knowledge graph passthrough** model: official D3FEND OWL (4,279 classes) remains authoritative and read-only. KGCS provides a thin, standards-compliant integration ontology that aligns D3FEND defensive concepts with core cybersecurity semantics, establishes bidirectional offensive-defensive relationships, and enables federation of D3FEND individuals into KGCS threat/defense correlations. The 7-tactic model (Detect, Deceive, Harden, Evict, Isolate, Model, Restore) provides strategic organization for categorizing defensive coverage.
+
+## v1.1 — `MITIGATED_BY` sources that are revoked or deprecated in ATT&CK
+
+The D3FEND mappings file (`d3fend-full-mappings.json`, D3FEND 1.3.0) cites
+ATT&CK IDs as the offensive side of each row. The 2026-09-26 graph-quality
+review counted 347 distinct IDs, of which at most 12 are revoked and 1 is
+deprecated in the loaded ATT&CK (regex count, so an upper bound). The
+loader's `OPTIONAL MATCH … WHERE t IS NOT NULL` drops those rows without
+reporting them.
+
+Rule (loader behaviour, no new term; defined once in
+`attck-to-owl-v1.0.md`, "v1.1 — Revoked and deprecated ATT&CK targets"):
+**bridge targets that are revoked are remapped via STIX `revoked-by` to the
+live successor; deprecated targets are dropped and counted.** The remapped
+edge is an ordinary `MITIGATED_BY` from the successor `Technique` /
+`SubTechnique`. The drop count is reported, never silent. The D3FEND
+release loaded is recorded as `D3FEND=<owl:versionInfo>` (e.g.
+`D3FEND=1.3.0`) in `BuildMetadata.sourceSnapshots`.

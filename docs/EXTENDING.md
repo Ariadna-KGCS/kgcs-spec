@@ -27,208 +27,101 @@
 
 ---
 
+## Module location convention (v1.1)
+
+- A **versioned module scoped to one standard** (enrichment, consequences, applicability, a future `-v1.1.owl` successor) lives in `ontology/standards/<std>-<module>-vX.Y.owl` and declares its terms in that standard's namespace (`docs/namespace-policy-v1.1.md`).
+- A **cross-cutting module** (alignment axioms, graph labels, build metadata, an organisational extension such as `asset`) lives in `ontology/extensions/`.
+- Frozen files are never edited or moved. A module that changes the meaning of an existing term is a successor file, not an addition.
+- Every module ships with: a shape update (new `shapes/<std>.shacl.ttl` version or a new shape file), a mapping doc (`mappings/<std>-<module>-to-owl-vX.Y.md`), a `CHANGELOG.md` entry, one focus node per new shape in `tests/fixtures/kgcs-abox.ttl` and at least one negative case in `tests/fixtures/negative/` with its `manifest.json` entry.
+
+---
+
 ## Adding a Core Standard
+
+The `.owl` files are **Turtle syntax** despite the suffix (every existing module is; the harness parses them with `format="turtle"`).
 
 ### Step 1: Define the Ontology
 
 Create `ontology/standards/<standard>-ontology-v1.0.owl`:
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF
-    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
-    xmlns:std="http://www.motherhacker.me/kgcs/ontology/<standard>#">
-    
-    <!-- Import core namespace -->
-    <owl:imports rdf:resource="http://www.motherhacker.me/kgcs/ontology/core#"/>
-    
-    <!-- Define classes -->
-    <owl:Class rdf:about="http://www.motherhacker.me/kgcs/ontology/<standard>#YourEntity">
-        <rdfs:label>Your Entity</rdfs:label>
-        <rdfs:comment>Definition and purpose</rdfs:comment>
-    </owl:Class>
-    
-    <!-- Define properties -->
-    <owl:DatatypeProperty rdf:about="http://www.motherhacker.me/kgcs/ontology/<standard>#yourProperty">
-        <rdfs:domain rdf:resource="http://www.motherhacker.me/kgcs/ontology/<standard>#YourEntity"/>
-        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
-    </owl:DatatypeProperty>
-    
-    <!-- Define relationships -->
-    <owl:ObjectProperty rdf:about="http://www.motherhacker.me/kgcs/ontology/<standard>#relatesTo">
-        <rdfs:domain rdf:resource="http://www.motherhacker.me/kgcs/ontology/<standard>#YourEntity"/>
-        <rdfs:range rdf:resource="http://www.motherhacker.me/kgcs/ontology/<standard>#OtherEntity"/>
-    </owl:ObjectProperty>
-    
-</rdf:RDF>
+```turtle
+@prefix std:  <http://www.motherhacker.me/kgcs/ontology/<standard>#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+std:<Standard>Ontology a owl:Ontology ;
+    rdfs:label "KGCS <Standard> Ontology v1.0" ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+std:YourEntity a owl:Class ;
+    rdfs:label "Your Entity" ;
+    rdfs:comment "Definition and purpose." .
+
+std:your_property a owl:DatatypeProperty ;
+    rdfs:domain std:YourEntity ;
+    rdfs:range xsd:string ;
+    rdfs:comment "OWL properties are snake_case; the graph property is camelCase (yourProperty)." .
+
+std:relates_to a owl:ObjectProperty ;
+    rdfs:domain std:YourEntity ;
+    rdfs:range std:OtherEntity ;
+    rdfs:comment "Graph relationship: RELATES_TO. Must not skip a hop of the causal chain." .
 ```
 
-### Step 2: Write Human-Readable Spec
+The namespace must be listed in the current `docs/namespace-policy-vX.Y.md`; a new standard needs a policy successor that adds it.
 
-Create `docs/docs/<standard>-ontology-v1.0.md`:
+### Step 2: Write the Mapping Doc
 
-```markdown
-# [Standard] Ontology v1.0
-
-## Overview
-- **Source:** [Official spec URL]
-- **Version:** v1.0 (frozen in KGCS)
-- **Last Updated:** [Date]
-
-## Core Entities
-- **Class:** [Entity] ([Definition])
-  - **Properties:** [property1], [property2], ...
-  - **Example:** [ID: description]
-
-## Relationships
-- **Class A** --[edge]--> **Class B**
-  - **Semantics:** [What this relationship means]
-
-## Examples
-[Real-world instances]
-```
+Create `mappings/<standard>-to-owl-v1.0.md`: source schema, entity mapping, field mapping (source field → OWL property → graph property → cardinality → vocabulary), transformation rules, provenance notes. Every `prefix:term` cited must exist in an OWL module — `mappings/mapping-coverage-matrix-v1.1.md` audits this.
 
 ### Step 3: Create SHACL Shapes
 
-Create `shapes/<standard>-shapes-v1.0.ttl`:
+Create `shapes/<standard>.shacl.ttl` (existing naming: `attck.shacl.ttl`, `d3fend.shacl.ttl`, …):
 
 ```turtle
-@prefix sh: <http://www.w3.org/ns/shacl#>.
-@prefix std: <http://www.motherhacker.me/kgcs/ontology/<standard>#>.
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix std: <http://www.motherhacker.me/kgcs/ontology/<standard>#> .
 
-# Shape for YourEntity
 std:YourEntityShape
-    a sh:NodeShape;
-    sh:targetClass std:YourEntity;
+    a sh:NodeShape ;
+    sh:targetClass std:YourEntity ;
     sh:property [
-        sh:path std:yourProperty;
-        sh:minCount 1;
-        sh:maxCount 1;
-        sh:datatype xsd:string;
-    ].
+        sh:path std:your_property ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "YourEntity must have exactly one yourProperty." ;
+        sh:severity sh:Violation ;
+    ] .
 ```
 
-### Step 4: Create Test Samples
+`sh:path` always uses the OWL name, never the graph name. Loader-derived ID patterns are `sh:Warning`; XSD-required fields are `sh:Violation`.
 
-Create positive and negative examples:
+### Step 4: Add Fixtures
 
-- `data/shacl-samples/<standard>-good.ttl` — Valid RDF
-- `data/shacl-samples/<standard>-bad.ttl` — Invalid RDF (missing required properties, wrong types)
+- `tests/fixtures/kgcs-abox.ttl` — one valid individual per new node shape (the harness fails if a shape has no focus node).
+- `tests/fixtures/negative/<case>.ttl` + entry in `manifest.json` — the exact results the mutation must produce.
 
-### Step 5: Create ETL Transformer
+### Step 5: Run the Harness
 
-Create `src/etl/etl_<standard>.py`:
-
-```python
-from rdflib import Graph, Namespace, URIRef, Literal
-
-class XyztoRDFTransformer:
-    def __init__(self):
-        self.graph = Graph()
-        self.ns = Namespace("http://www.motherhacker.me/kgcs/ontology/<standard>#")
-    
-    def transform(self, json_data: dict) -> Graph:
-        """
-        Transform [Standard] JSON to RDF.
-        
-        Input: JSON from official source (API/download)
-        Output: RDF Graph conforming to [standard]-shapes.ttl
-        """
-        for item in json_data.get("items", []):
-            self._add_entity(item)
-        return self.graph
-    
-    def _add_entity(self, item: dict):
-        """Add an entity and its properties to graph."""
-        entity_id = item.get("id")
-        subj = self.ns[entity_id]
-        
-        # Type
-        self.graph.add((subj, RDF.type, self.ns.YourEntity))
-        
-        # Properties
-        self.graph.add((subj, self.ns.yourProperty, Literal(item.get("name"))))
-        
-        # Relationships
-        for related_id in item.get("related", []):
-            self.graph.add((subj, self.ns.relatesTo, self.ns[related_id]))
-
-def main():
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", "-i", required=True)
-    parser.add_argument("--output", "-o", required=True)
-    parser.add_argument("--validate", action="store_true")
-    args = parser.parse_args()
-    
-    # Load JSON
-    import json
-    with open(args.input, 'r') as f:
-        data = json.load(f)
-    
-    # Transform
-    transformer = XyztoRDFTransformer()
-    graph = transformer.transform(data)
-    
-    # Validate
-    if args.validate:
-        from src.core.validation import run_validator, load_graph
-        shapes = load_graph("shapes/<standard>-shapes-v1.0.ttl")
-        conforms, _, _ = run_validator(args.output, shapes, "artifacts")
-        print("✓ PASS" if conforms else "✗ FAIL")
-    
-    # Save
-    graph.serialize(destination=args.output, format="turtle")
-    print(f"Saved {args.output}")
-
-if __name__ == "__main__":
-    main()
+```bash
+python -m pytest
 ```
 
-### Step 6: Create Unit Tests
+### Step 6: Downstream (other repos, after a spec release)
 
-Create `tests/test_<standard>_integration.py`:
+- `kgcs-pipeline`: downloader + `etl/load_<standard>.py` + post-load Cypher checks; bump `SPEC_VERSION` and run `sync_spec.py`.
+- `kgcs-server`: Cypher templates and response schemas.
+- Never by relative path: consumers pin a released tag of this repo.
 
-```python
-import json
-import pytest
-from src.etl.etl_<standard> import XyztoRDFTransformer
-from src.core.validation import run_validator, load_graph
+### Step 7: Update Documentation
 
-def test_<standard>_etl():
-    """Test [Standard] ETL transformer."""
-    # Load sample
-    with open("data/<standard>/samples/sample_<standard>.json", "r") as f:
-        data = json.load(f)
-    
-    # Transform
-    transformer = XyztoRDFTransformer()
-    graph = transformer.transform(data)
-    
-    # Assertions
-    assert len(graph) > 0
-    assert graph.query("SELECT ?s WHERE { ?s a ?YourEntity }")
-```
-
-### Step 7: Update CI/CD
-
-Add to `.github/workflows/shacl-validation.yml`:
-
-```yaml
-- name: Validate [Standard]
-  run: |
-    python scripts/validate_shacl_stream.py \
-      --data data/<standard>/samples/sample_<standard>.json \
-    --shapes shapes/<standard>-shapes-v1.0.ttl
-```
-
-### Step 8: Update Documentation
-
-1. Add to [GLOSSARY.md](GLOSSARY.md) — Standard definition + classes + relationships
-2. Add to `architecture.md` (in `kgcs-server`) — Which phase, dependencies
-3. Update `governance.md` (in `kgcs-server`) — Versioning policy, rollback procedure
+1. Add to [GLOSSARY.md](GLOSSARY.md) — standard definition + classes + relationships.
+2. Add the standard to `contracts/agent-consumable-schema.md` (labels, key properties, relationship types).
+3. `CHANGELOG.md` entry under `[Unreleased]`.
 
 ---
 
@@ -236,46 +129,36 @@ Add to `.github/workflows/shacl-validation.yml`:
 
 ### Step 1: Define the Extension Ontology
 
-Create `extensions/<extension>-extension-v1.0.owl`:
+Create `ontology/extensions/<extension>-extension-v1.0.owl` (Turtle):
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:owl="http://www.w3.org/2002/07/owl#"
-         xmlns:asset="http://www.motherhacker.me/kgcs/ontology/<extension>#"
-         xmlns:kgcs="http://www.motherhacker.me/kgcs/ontology/core#">
-    
-    <!-- Import core ONLY (one-way) -->
-    <owl:imports rdf:resource="http://www.motherhacker.me/kgcs/ontology/core#"/>
-    
-    <!-- Define extension classes -->
-    <owl:Class rdf:about="http://www.motherhacker.me/kgcs/ontology/<extension>#YourContextualEntity">
-        <rdfs:label>Contextual Entity</rdfs:label>
-        <rdfs:comment>References core, adds context/subjectivity</rdfs:comment>
-    </owl:Class>
-    
-    <!-- Reference core classes (don't redefine) -->
-    <owl:ObjectProperty rdf:about="http://www.motherhacker.me/kgcs/ontology/<extension>#assesses">
-        <rdfs:domain rdf:resource="http://www.motherhacker.me/kgcs/ontology/<extension>#YourContextualEntity"/>
-        <rdfs:range rdf:resource="http://www.motherhacker.me/kgcs/ontology/core#Vulnerability"/>
-    </owl:ObjectProperty>
-    
-</rdf:RDF>
+```turtle
+@prefix ext:  <http://www.motherhacker.me/kgcs/ontology/<extension>#> .
+@prefix kgcs: <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ext:<Extension>ExtensionOntology a owl:Ontology ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .   # core only, one-way
+
+ext:YourContextualEntity a owl:Class ;
+    rdfs:comment "References core, adds context/subjectivity." .
+
+ext:assesses a owl:ObjectProperty ;
+    rdfs:domain ext:YourContextualEntity ;
+    rdfs:range kgcs:Vulnerability .   # reference core classes, never redefine them
 ```
+
+The extension namespace must be added by a namespace-policy successor (`docs/namespace-policy-v1.1.md` is the current one; `asset:` and `build:` are the registered extension namespaces).
 
 ### Step 2: Create SHACL Shapes
 
-`shapes/<extension>-extension-shapes-v1.0.ttl`
+`shapes/<extension>.shacl.ttl`, plus fixtures as in Step 4 above.
 
 ### Step 3: Create Extension Spec
 
-`docs/docs/<extension>-extension-ontology-v1.0.md`
+`docs/<extension>-extension-ontology-v1.0.md` (see `docs/asset-extension-ontology-v1.0.md`).
 
-### Step 4: Implement Python Module
-
-`src/extensions/<extension>.py` — Load extension data independently
-
-### Step 5: **Never Modify Core**
+### Step 4: **Never Modify Core**
 
 - Extension classes reference core, not vice versa
 - Never add properties to core classes
@@ -309,14 +192,13 @@ Create `extensions/<extension>-extension-v1.0.owl`:
 
 ## Checklist for Adding a Standard
 
-- [ ] OWL ontology defined (`ontology/core/`, `ontology/standards/`, or `ontology/extensions/` with `*-v1.0.owl` naming)
-- [ ] Human-readable spec written (`docs/docs/*-ontology-v1.0.md`)
-- [ ] SHACL shapes created (`shapes/*-v1.0.ttl`)
-- [ ] Positive + negative test samples provided
-- [ ] ETL transformer implemented (`src/etl/etl_*.py`)
-- [ ] Unit tests written (`tests/test_*_integration.py`)
-- [ ] CI/CD updated (`.github/workflows/`)
-- [ ] Documentation updated (GLOSSARY, ARCHITECTURE, GOVERNANCE)
+- [ ] OWL module defined (Turtle; `ontology/standards/` or `ontology/extensions/` per the location convention; namespace registered in the current namespace policy)
+- [ ] Mapping doc written (`mappings/*-to-owl-vX.Y.md`) and coverage matrix updated
+- [ ] SHACL shapes created or versioned (`shapes/<std>.shacl.ttl`)
+- [ ] Fixture focus node + negative case + manifest entry (`tests/fixtures/`)
+- [ ] `python -m pytest` green (CI: `.github/workflows/validate.yml`)
+- [ ] Documentation updated (GLOSSARY, `contracts/agent-consumable-schema.md`, CHANGELOG)
+- [ ] Downstream work filed against the consumers (`kgcs-pipeline` loader + post-load checks, `kgcs-server` templates/schemas) for after the release
 - [ ] PR reviewed for:
   - No circular imports
   - Causal chain maintained
@@ -326,6 +208,8 @@ Create `extensions/<extension>-extension-v1.0.owl`:
 ---
 
 ## Extending the AI Layer
+
+The `ai/` and `orchestrator/` packages described here live in `kgcs-server`; this section is kept in the spec because the invariants below are part of the standard.
 
 The `ai/` package is intentionally narrow and deterministic. All extensions must stay within these boundaries: no LLM inference, no dynamic Cypher, no graph writes.
 
@@ -381,7 +265,8 @@ If future work adds an LLM for richer natural-language understanding, it must si
 
 ## References
 
-- `architecture.md` (in `kgcs-server`) — Phases and dependencies
 - [GLOSSARY.md](GLOSSARY.md) — Existing standards + relationships
-- copilot-instructions.md — Development rules
-- Example transformers: `src/etl/etl_cpe.py`, `src/etl/etl_cve.py`
+- [namespace-policy-v1.1.md](namespace-policy-v1.1.md) — Registered namespaces
+- [adr/ADR-0001-consequence-subnodes.md](adr/ADR-0001-consequence-subnodes.md) — Worked example of a versioned module decision
+- `../shapes/README.md` — Shape conventions, alignment modules, inference mode
+- Example loaders: `etl/load_cpe.py`, `etl/load_cve.py` (in `kgcs-pipeline`)

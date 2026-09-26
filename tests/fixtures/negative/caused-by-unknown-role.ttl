@@ -1,0 +1,21 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# cve.shacl v1.2 CausedByStatementShape: a sourceRoles member outside the
+# closed vocabulary {nvd, cna, adp}. Lists are aligned and of equal length.
+fx:cve-3 a kgcs:Vulnerability ;
+    cve:cveId "CVE-2024-0003" ;
+    cve:published "2024-04-01T08:00:00Z"^^xsd:dateTime ;
+    cve:source "psirt@vendor.example" ;
+    kgcs:caused_by fx:cwe-79 .
+
+fx:cb-cve-3-cwe-79 a cve:CausedByStatement ;
+    rdf:subject fx:cve-3 ;
+    rdf:predicate kgcs:caused_by ;
+    rdf:object fx:cwe-79 ;
+    cve:weaknessSources ( "psirt@vendor.example" ) ;
+    cve:weaknessSourceRoles ( "vendor" ) ;
+    cve:weaknessTypes ( "Primary" ) .

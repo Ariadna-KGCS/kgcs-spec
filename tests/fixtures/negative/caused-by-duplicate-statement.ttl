@@ -1,0 +1,16 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# cve.shacl v1.2 CausedByStatementShape: a second statement for the pair
+# (cve-1, cwe-79) - one CAUSED_BY edge per (CVE, CWE) pair (ADR-0002). Both
+# statements are reported, each against the other.
+fx:cb-cve-1-cwe-79-dup a cve:CausedByStatement ;
+    rdf:subject fx:cve-1 ;
+    rdf:predicate kgcs:caused_by ;
+    rdf:object fx:cwe-79 ;
+    cve:weaknessSources ( "secalert@redhat.com" ) ;
+    cve:weaknessSourceRoles ( "cna" ) ;
+    cve:weaknessTypes ( "Secondary" ) .

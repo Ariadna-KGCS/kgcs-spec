@@ -1,0 +1,103 @@
+# KGCS Build Metadata SHACL Shapes v1.1
+#
+# Validates the BuildMetadata node against the build-metadata module
+# (ontology/extensions/build-metadata-v1.0.owl).
+#
+# v1.1: at most one sourceSnapshots value per SOURCE, so each value names the
+# exact release loaded for that standard (e.g. CAPEC=3.9, CWE=4.20,
+# D3FEND=1.3.0). Conventions per source: mappings/mapping-coverage-matrix-v1.1.md,
+# "Build metadata".
+#
+# ATTCK is one key for the three bundles (enterprise, mobile, ics), with a
+# deterministic value:
+#   - all three bundles carry an x-mitre-collection object with the same
+#     x_mitre_version  ->  that release, e.g. ATTCK=18.1
+#   - otherwise        ->  ATTCK=download:<date>;modified-max:<max `modified`
+#                          across the three bundles>
+# The x-mitre-matrix x_mitre_version (2.0 / 1.0) is the matrix object's own
+# version, not the ATT&CK release; never use it. The current raw bundles are
+# STIX 2.0 without x-mitre-collection, so today the value is
+#   ATTCK=download:2026-09-06;modified-max:2026-08-04
+# Per-domain keys (ATTCK-ENTERPRISE=..., ...) are a v1.2 candidate, not
+# implemented.
+#
+# Enforcement level: STRICT (reject at ingest)
+#
+# Singleton-ness (exactly one BuildMetadata node per graph) is a post-load
+# Cypher invariant of the pipeline; SHACL node shapes validate each node in
+# isolation and cannot express it.
+
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix build: <http://www.motherhacker.me/kgcs/ontology/build#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+
+
+build:BuildMetadataShape
+    a sh:NodeShape ;
+    sh:targetClass build:BuildMetadata ;
+
+    # spec_version: semantic version of the pinned kgcs-spec release
+    sh:property [
+        sh:path build:spec_version ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^\\d+\\.\\d+\\.\\d+$" ;
+        sh:message "BuildMetadata must have exactly one specVersion in MAJOR.MINOR.PATCH form." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # build_timestamp: completion instant of the full load
+    sh:property [
+        sh:path build:build_timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "BuildMetadata must have exactly one buildTimestamp (xsd:dateTime)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # pipeline_commit: git hash of kgcs-pipeline
+    sh:property [
+        sh:path build:pipeline_commit ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9a-f]{7,40}$" ;
+        sh:message "BuildMetadata must have exactly one pipelineCommit (7-40 lowercase hex characters)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # source_snapshot: one "<SOURCE>=<snapshot>" value per loaded source
+    sh:property [
+        sh:path build:source_snapshot ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:pattern "^(CPE|CVE|CVSS|CWE|CAPEC|ATTCK|D3FEND|CAR|SHIELD|ENGAGE)=.+$" ;
+        sh:message "BuildMetadata.sourceSnapshots values must be <SOURCE>=<snapshot> with SOURCE one of the ten KGCS standards." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # v1.1: one snapshot per SOURCE - the value is the exact release of that
+    # standard, never a list of candidates (severity is read from the shape)
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes build:BuildShapesPrefixes ;
+        sh:message "BuildMetadata.sourceSnapshots must hold at most one value per SOURCE (the exact release loaded for that standard)." ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this build:source_snapshot ?value , ?other .
+                BIND (build:source_snapshot AS ?path)
+                FILTER (?other != ?value && STRBEFORE(STR(?other), "=") = STRBEFORE(STR(?value), "="))
+            }
+        """ ;
+    ] .
+
+build:BuildShapesPrefixes
+    a owl:Ontology ;
+    sh:declare [
+        sh:prefix "build" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/build#"^^xsd:anyURI ;
+    ] .

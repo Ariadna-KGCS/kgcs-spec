@@ -1,0 +1,12 @@
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# attck.shacl v1.1 domains vocabulary: the graph layer uses the short form
+# (enterprise | mobile | ics, load_attck.py); the STIX long form
+# "enterprise-attack" is rejected. The tactic has no PART_OF edge, so no
+# coherence shape is involved.
+fx:ta0099 a kgcs:Tactic ;
+    attack:attackId "TA0099" ;
+    attack:phaseName "execution" ;
+    attack:domain "enterprise-attack" .
