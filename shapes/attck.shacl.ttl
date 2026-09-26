@@ -1,7 +1,24 @@
-# KGCS ATT&CK SHACL Shapes v1.0
+# KGCS ATT&CK SHACL Shapes v1.1
 #
 # Validates Technique, SubTechnique, and Tactic nodes against the ATT&CK
-# ontology (standards/attck/attck-ontology-v1.0.owl).
+# ontology (ontology/standards/attck-ontology-v1.0.owl).
+#
+# v1.1: `domains` (graph, string list; OWL attack:domain, frozen, one value
+# per list member) required on Technique, SubTechnique and Tactic with the
+# graph-layer vocabulary "enterprise" | "mobile" | "ics" (load_attck.py; STIX
+# x_mitre_domains uses enterprise-attack | mobile-attack | ics-attack - the
+# divergence is recorded in shapes/README.md). Two SHACL-SPARQL domain
+# coherence shapes:
+#   - attack:PartOfDomainCoherenceShape: every Tactic a Technique is PART_OF
+#     must be in one of the Technique's domains. Added after the 2026-09-26
+#     graph-quality review measured 618 of 1,054 PART_OF edges (59%) linking
+#     techniques to same-named tactics of other matrices, which SH-CORE-06
+#     (minCount 1) cannot detect. Graphs loaded by kgcs-pipeline pinned to
+#     spec 1.0.0 fail it by design (618 edges on kgcs-demo) until the loader
+#     change of session Q5.
+#   - attack:SubtechniqueOfDomainCoherenceShape: a SubTechnique and its
+#     SUBTECHNIQUE_OF parent share a domain (0 of 540 cross-domain on
+#     kgcs-demo; regression guard).
 #
 # Source standard: MITRE ATT&CK STIX JSON (enterprise, ics, mobile)
 # Enforcement level: STRICT (reject at ingest)
@@ -12,12 +29,15 @@
 #   - Tactic.attackId matches TA\d{4}
 #   - Every Technique belongs to ≥1 Tactic (enforced also in core.shacl.ttl)
 #   - Every SubTechnique has EXACTLY 1 SUBTECHNIQUE_OF parent
+#   - Every PART_OF edge stays inside one ATT&CK domain (v1.1)
+#   - Every SUBTECHNIQUE_OF edge stays inside one ATT&CK domain (v1.1)
 #   - Revoked/deprecated objects are excluded during ETL — do not appear here
 
 @prefix sh:    <http://www.w3.org/ns/shacl#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix kgcs:  <http://www.motherhacker.me/kgcs/ontology/core#> .
 @prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +65,16 @@ attack:TechniqueShape
         sh:datatype xsd:string ;
         sh:minCount 1 ;
         sh:message "Technique must have a name." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # domains (v1.1): graph property `domains` (list), short form of STIX x_mitre_domains
+    sh:property [
+        sh:path attack:domain ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "enterprise" "mobile" "ics" ) ;
+        sh:message "Technique.domains must hold at least one of enterprise, mobile, ics (graph form of STIX x_mitre_domains)." ;
         sh:severity sh:Violation ;
     ] ;
 
@@ -86,6 +116,16 @@ attack:SubTechniqueShape
         sh:severity sh:Violation ;
     ] ;
 
+    # domains (v1.1): graph property `domains` (list), short form of STIX x_mitre_domains
+    sh:property [
+        sh:path attack:domain ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "enterprise" "mobile" "ics" ) ;
+        sh:message "SubTechnique.domains must hold at least one of enterprise, mobile, ics (graph form of STIX x_mitre_domains)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
     # SUBTECHNIQUE_OF: exactly one parent Technique (cardinality invariant)
     sh:property [
         sh:path attack:subtechnique_of ;
@@ -116,6 +156,16 @@ attack:TacticShape
         sh:severity sh:Violation ;
     ] ;
 
+    # domains (v1.1): graph property `domains` (list), short form of STIX x_mitre_domains
+    sh:property [
+        sh:path attack:domain ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "enterprise" "mobile" "ics" ) ;
+        sh:message "Tactic.domains must hold at least one of enterprise, mobile, ics (graph form of STIX x_mitre_domains)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
     # phaseName: ATT&CK shortname (e.g. initial-access, defense-evasion)
     # Derived from x_mitre_shortname in STIX
     sh:property [
@@ -124,4 +174,73 @@ attack:TacticShape
         sh:minCount 1 ;
         sh:message "Tactic must have a phaseName (ATT&CK shortname)." ;
         sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# PART_OF domain coherence (v1.1)
+#
+# ATT&CK reuses tactic shortnames across matrices (execution, persistence,
+# discovery, ... exist in enterprise, mobile and ICS with different TA ids).
+# A Technique may only be PART_OF a Tactic of its own domain: every domain of
+# the target Tactic must be one of the Technique's domains. STIX tactics are
+# single-domain, so this is "the tactic's matrix is one of the technique's".
+# Mirrors, for the pipeline, the post-load check
+#   MATCH (t)-[:PART_OF]->(ta:Tactic)
+#   WHERE any(d IN ta.domains WHERE NOT d IN t.domains) RETURN count(*) = 0
+# Loader rule (mappings/attck-to-owl-v1.0.md, v1.1 section): resolve each
+# kill_chain_phases entry to the tactic attackId inside the same STIX bundle;
+# never MATCH a Tactic by phaseName alone.
+# ---------------------------------------------------------------------------
+
+attack:ATTCKShapesPrefixes
+    a owl:Ontology ;
+    sh:declare [
+        sh:prefix "attack" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/attack#"^^xsd:anyURI ;
+    ] .
+
+attack:PartOfDomainCoherenceShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Technique ;
+    sh:severity sh:Violation ;    # read from the shape, not the SPARQL constraint
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes attack:ATTCKShapesPrefixes ;
+        sh:message "PART_OF crosses ATT&CK domains: the Tactic belongs to a domain the Technique does not (resolve tactics by attackId within the same STIX bundle, never by phaseName alone)." ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this attack:contains_by ?value .
+                BIND (attack:contains_by AS ?path)
+                ?value attack:domain ?d .
+                FILTER NOT EXISTS { $this attack:domain ?d }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SUBTECHNIQUE_OF domain coherence (v1.1)
+#
+# A SubTechnique and its parent Technique share at least one domain. Passes
+# on kgcs-demo today (540 edges, 0 cross-domain); guards against a loader
+# regression that joined sub-techniques across bundles. The attackId prefix
+# check (T####.### -> parent T####) is NOT implemented here (v1.2 candidate).
+# ---------------------------------------------------------------------------
+
+attack:SubtechniqueOfDomainCoherenceShape
+    a sh:NodeShape ;
+    sh:targetClass attack:SubTechnique ;
+    sh:severity sh:Violation ;    # read from the shape, not the SPARQL constraint
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes attack:ATTCKShapesPrefixes ;
+        sh:message "SUBTECHNIQUE_OF crosses ATT&CK domains: the SubTechnique shares no domain with its parent Technique." ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this attack:subtechnique_of ?value .
+                BIND (attack:subtechnique_of AS ?path)
+                FILTER NOT EXISTS { $this attack:domain ?d . ?value attack:domain ?d . }
+            }
+        """ ;
     ] .

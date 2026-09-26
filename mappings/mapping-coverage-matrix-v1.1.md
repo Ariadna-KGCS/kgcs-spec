@@ -4,10 +4,13 @@ Purpose: quick audit view of schema-to-OWL mapping coverage for ETL implementati
 
 Supersedes `mapping-coverage-matrix-v1.0.md` (kept frozen). v1.1 completes the
 matrix for all ten standards and the versioned modules added after v1.0.0
-(CWE enrichment, CWE/CAPEC consequences, CVE applicability, graph labels,
-ATT&CK-core alignment, build metadata), corrects the ATT&CK rows that cited
-terms no OWL module declares, and adds a scripted audit of every
-`prefix:term` cited by the mapping docs.
+(CWE enrichment, CWE/CAPEC consequences, CVE applicability, CAUSED_BY
+provenance, graph labels, ATT&CK-core alignment, build metadata), corrects
+the ATT&CK rows that cited terms no OWL module declares, and adds a scripted
+audit of every `prefix:term` cited by the mapping docs. The v1.1.0 release
+also folds in the 2026-09-26 graph-quality review: PART_OF domain coherence,
+CAUSED_BY provenance, the revoked/deprecated ATT&CK bridge rule and exact
+per-source build snapshots.
 
 Status legend:
 
@@ -49,6 +52,15 @@ Unchanged from v1.0 (18 rows, all implemented). Target module
 | `nodes[j].cpeMatch[k].matchCriteriaId` | yes | `cve:matches_criteria` | implemented | graph `MATCHES_CRITERIA {vulnerable, matchIndex}` |
 | `nodes[j].cpeMatch[k].vulnerable` | yes | `cve:matches_vulnerable_criteria` / `cve:matches_context_criteria` | implemented | RDF form of the edge flag (sub-properties) |
 | `i`, `j` | derived | `cve:configIndex`, `cve:nodeIndex` | implemented | document order |
+
+## CAUSED_BY provenance (`cve-weakness-provenance-v1.0.owl`, v1.1, ADR-0002)
+
+| Source Field | Required in Source | Target OWL Term(s) | Status | Notes |
+| --- | --- | --- | --- | --- |
+| `weaknesses[].description[].value` | yes | `kgcs:caused_by`; reified as `cve:CausedByStatement` | implemented (edge) / planned (statement) | graph `CAUSED_BY`, exactly one edge per (CVE, CWE) pair; count unchanged (331,107 on the 2026-09-26 raw data) |
+| `weaknesses[].source` | yes | `cve:weaknessSources` | planned (loader) | edge property `sources`, string list, verbatim |
+| derived from `weaknesses[].source` | derived | `cve:weaknessSourceRoles` | planned (loader) | edge property `sourceRoles`: `nvd` for `nvd@nist.gov`, `adp` for a declared ADP identifier (`134c704f-9b21-4f2e-91b3-4a467353bcc0`, CISA ADP), else `cna` |
+| `weaknesses[].type` | yes | `cve:weaknessTypes` | planned (loader) | edge property `types`: `Primary` / `Secondary`; the three lists are index-aligned, equal length |
 
 ## CWE
 
@@ -103,7 +115,7 @@ Unchanged from v1.0 (18 rows, all implemented). Target module
 | `@Abstraction`, `@Status` | yes | `capec:abstraction`, `capec:status` | implemented (OWL) | loader coverage not re-verified |
 | `Related_Weaknesses` | yes | `kgcs:exploited_by` (inverse direction) | implemented | graph `DEMONSTRATED_BY` from Weakness |
 | `Related_Attack_Patterns` (ChildOf) | no | `capec:childOf` | implemented | graph `CHILD_OF` (AttackPattern → AttackPattern) |
-| `Taxonomy_Mappings` (ATT&CK) | no | `kgcs:implemented_as` | implemented | graph `IMPLEMENTS` (AttackPattern → Technique), written by `load_attck.py` |
+| `Taxonomy_Mappings` (ATT&CK) | no | `kgcs:implemented_as` | implemented | graph `IMPLEMENTS` (AttackPattern → Technique), written by `load_attck.py`; v1.1 revoked/deprecated rule applies (15 of 272 CAPEC 3.9 rows cite revoked techniques) |
 | `Consequences/Consequence` | no | `capec:Consequence`, `capec:hasConsequence`, `capec:scope`, `capec:technicalImpact`, `capec:consequenceLikelihood` (frozen) + `capec:consequence_id`, `capec:consequence_note` (`capec-consequences-v1.0.owl`) | planned (loader) | ADR-0001; Impact optional (CAPEC XSD `minOccurs=0`); 10-value CAPEC vocabulary |
 | Categories, Views, Execution_Flow, Skills, Resources, Indicators, Mitigations, Example_Instances | no | see audit below | planned | `capec-to-owl-v1.0.md` cites terms not declared by any OWL module |
 
@@ -117,12 +129,13 @@ vocabulary or to undeclared `attack:` terms are marked accordingly.
 | --- | --- | --- | --- | --- |
 | `x_mitre_id` | yes | `attack:attackId` | implemented | `T####`, `T####.###`, `TA####` |
 | `name` | yes | `attack:name` | implemented | v1.1 (`graph-labels-v1.0.owl`); v1.0 cited `rdfs:label` |
-| `kill_chain_phases.phase_name` | no | `attack:phaseName` (Tactic), `attack:contains_by` ≡ `kgcs:belongs_to` (Technique → Tactic) | implemented | graph `PART_OF`; `attack:shortname` is the v1.0 Tactic term for the same value |
+| `kill_chain_phases.phase_name` | no | `attack:phaseName` (Tactic), `attack:contains_by` ≡ `kgcs:belongs_to` (Technique → Tactic) | partial | graph `PART_OF`; `attack:shortname` is the v1.0 Tactic term for the same value. v1.1: the tactic is resolved by `attackId` inside the same STIX bundle, never by `phaseName` alone (`attck-to-owl-v1.0.md`). The loader as of 2026-09-26 still matches on `phaseName`: 618 of 1,054 edges cross domains, which `attack:PartOfDomainCoherenceShape` detects |
 | `x_mitre_is_subtechnique` | no | `attack:isSubtechnique` | implemented (OWL) | graph keeps a separate `SubTechnique` label |
 | `relationship_type = subtechnique-of` | no | `attack:subtechnique_of` ⊑ `kgcs:subtechnique_of` | implemented | graph `SUBTECHNIQUE_OF`, exactly one parent |
 | `external_references` (CAPEC) | no | `kgcs:implemented_as` | implemented | graph `IMPLEMENTS`, parent techniques only |
 | `x_mitre_platforms` | no | `attack:platform` | implemented (OWL) | loader coverage not re-verified |
-| `x_mitre_domains` | no | `attack:domain` | implemented | graph `domains` array |
+| `x_mitre_domains` | no | `attack:domain` | implemented | graph `domains` string list on Technique, SubTechnique and Tactic, short form `enterprise` / `mobile` / `ics` (from the bundle file name); required since `attck.shacl.ttl` v1.1; SUBTECHNIQUE_OF domain coherence added |
+| `relationship_type = revoked-by`, `x_mitre_deprecated` | no | none (loader behaviour) | planned (loader) | bridges into ATT&CK (`IMPLEMENTS`, `MITIGATED_BY`): revoked targets are remapped to the live successor, deprecated targets are dropped and counted (`attck-to-owl-v1.0.md`, v1.1) |
 | `x_mitre_version`, `revoked`, `confidence`, `created_by_ref`, `x_mitre_modified_by_ref`, `x_mitre_tactic_type` | no | `attack:attackVersion`, `attack:revoked`, `attack:confidence`, `attack:createdBy`, `attack:modifiedBy`, `attack:tacticType` | implemented (OWL) | loader coverage not re-verified |
 | `kill_chain_phases.kill_chain_name` | no | `attack:killChainName` | implemented (OWL) | `mitre-attack`, `mitre-mobile-attack`, `mitre-ics-attack` |
 | `description`, `created`, `modified`, `lang`, `labels` | yes/no | `dct:description`, `dct:created`, `dct:modified`, `dct:language`, `dct:subject` | external | not KGCS terms; unconstrained by shapes |
@@ -134,7 +147,7 @@ vocabulary or to undeclared `attack:` terms are marked accordingly.
 | --- | --- | --- | --- | --- |
 | technique class IRI fragment | yes | `d3fend:d3fendId` | implemented | `D3-<LETTERS>`; loader fallback to URI fragment (Warning pattern) |
 | `rdfs:label` | yes | `d3fend:name` | implemented | v1.1 (`graph-labels-v1.0.owl`) |
-| offensive-technique mapping | no | `kgcs:mitigated_by` | implemented | graph `MITIGATED_BY` (Technique → DefensiveTechnique); the only edge `load_d3fend.py` writes |
+| offensive-technique mapping | no | `kgcs:mitigated_by` | implemented | graph `MITIGATED_BY` (Technique → DefensiveTechnique); the only edge `load_d3fend.py` writes; v1.1 revoked/deprecated rule applies (≤ 12 revoked, 1 deprecated IDs in D3FEND 1.3.0 mappings) |
 | `d3fend:references_cwe`, `d3fend:counters_attack_pattern` (frozen OWL) | no | as declared | planned | declared in `d3fend-ontology-v1.0.owl`, never loaded; policy call pending (shapes/README.md, D3FEND v1.1 candidates) |
 | DefensiveTactic, Procedure, Capability, PrerequisiteCondition | no | `d3fend:DefensiveTactic`, `d3fend:Procedure`, `d3fend:Capability`, `d3fend:PrerequisiteCondition` | implemented (OWL) | loader coverage not re-verified |
 
@@ -174,12 +187,26 @@ vocabulary or to undeclared `attack:` terms are marked accordingly.
 | pipeline `SPEC_VERSION` | yes | `build:spec_version` | planned (loader) | loader postscript, M0 scope |
 | load completion instant | yes | `build:build_timestamp` | planned (loader) | |
 | `git rev-parse HEAD` of kgcs-pipeline | yes | `build:pipeline_commit` | planned (loader) | |
-| per-source download snapshot | yes | `build:source_snapshot` | planned (loader) | `<SOURCE>=<snapshot>`, one value per loaded source |
+| per-source download snapshot | yes | `build:source_snapshot` | planned (loader) | `<SOURCE>=<snapshot>`, at most one value per SOURCE (`build.shacl.ttl` v1.1) |
+
+Snapshot value per source: the exact release loaded, taken from the source
+itself wherever the source states it. Otherwise it is the download instant
+recorded by the downloader.
+
+| SOURCE | Snapshot value | Example |
+| --- | --- | --- |
+| `CWE` | catalogue `Version` attribute | `CWE=4.20` |
+| `CAPEC` | catalogue `Version` attribute | `CAPEC=3.9` |
+| `D3FEND` | ontology `owl:versionInfo` | `D3FEND=1.3.0` |
+| `ATTCK` | One key for the three bundles. If all three carry an `x-mitre-collection` with the same `x_mitre_version`: that release. Otherwise `download:<date>;modified-max:<max modified across the three bundles>`. Never the `x-mitre-matrix` `x_mitre_version` (object version, not the ATT&CK release). Per-domain keys are a v1.2 candidate | `ATTCK=18.1`; today `ATTCK=download:2026-09-06;modified-max:2026-08-04` |
+| `CVE`, `CPE`, `CVSS` | NVD feed / API download instant (UTC) | `CVE=2026-09-01T03:00:00Z` |
+| `CAR`, `SHIELD`, `ENGAGE` | release tag if any, else repository commit or download date | `ENGAGE=1.0` |
 
 ## Audit — terms cited by mapping docs but declared by no OWL module
 
 Scripted 2026-09-06 over every `` `prefix:term` `` in `mappings/*.md` against
-the union of `ontology/**/*.owl` (17 modules after v1.1). Rows are design
+the union of `ontology/**/*.owl` (17 modules after v1.1; the v1.1.0 release adds
+`cve-weakness-provenance-v1.0.owl`, 18, whose terms are all cited correctly). Rows are design
 intent in the mapping docs that never reached an OWL module; each is
 "planned" until a versioned module declares it.
 
@@ -202,3 +229,6 @@ intent in the mapping docs that never reached an OWL module; each is
 4. Validate CVSS multi-version coexistence (do not overwrite prior score nodes).
 5. After the enrichment loaders land: re-run `shapes/cwe.shacl.ttl` v1.2 and `shapes/capec.shacl.ttl` v1.1 against exported data; the enrichment `sh:minCount 1` constraints must pass.
 6. After the build-metadata postscript lands: exactly one `BuildMetadata` node per graph (Cypher), `shapes/build.shacl.ttl` on export.
+7. After the `PART_OF` loader fix: zero `PART_OF` edges crossing domains (Cypher in `attck-to-owl-v1.0.md`, v1.1). The `PART_OF` count drops (436 expected on the 2026-09-06 bundles); a new snapshot is required.
+8. After the provenance-aware `load_cwe.py` (the `CAUSED_BY` writer): the `CAUSED_BY` count is unchanged on the same raw data, and `size(sources) = size(sourceRoles) = size(types)` holds on every edge.
+9. After the revoked-by remap: the per-bridge counts (remapped / dropped deprecated / unresolved) are reported by the loader and recorded with the snapshot.

@@ -63,7 +63,7 @@ attack:phaseName a owl:DatatypeProperty ;
     rdfs:domain attack:Tactic ;
     rdfs:range xsd:string ;
     rdfs:label "phase name" ;
-    rdfs:comment "ATT&CK tactic shortname as used in kill_chain_phases.phase_name (e.g. execution). Join key for PART_OF in the loader. Graph property: phaseName." .
+    rdfs:comment "ATT&CK tactic shortname (kill_chain_phases.phase_name, e.g. execution). Not a join key: phase names repeat across matrices, and PART_OF resolves Technique -> Tactic by tactic attackId within the same STIX bundle (mappings/attck-to-owl-v1.0.md). Graph property: phaseName." .
 
 car:title a owl:DatatypeProperty ;
     rdfs:domain kgcs:DetectionAnalytic ;

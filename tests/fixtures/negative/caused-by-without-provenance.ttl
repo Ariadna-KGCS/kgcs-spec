@@ -1,0 +1,13 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# cve.shacl v1.2 CausedByProvenanceCoverageShape: CAUSED_BY edge loaded
+# without provenance (pre-v1.1 loader) - Warning, not Violation.
+fx:cve-2 a kgcs:Vulnerability ;
+    cve:cveId "CVE-2024-0002" ;
+    cve:published "2024-03-01T08:00:00Z"^^xsd:dateTime ;
+    cve:source "secalert@redhat.com" ;
+    kgcs:caused_by fx:cwe-79 .

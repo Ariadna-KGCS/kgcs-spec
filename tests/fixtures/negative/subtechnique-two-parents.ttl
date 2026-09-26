@@ -10,5 +10,6 @@
 fx:t1105 a kgcs:Technique ;
     attack:attackId "T1105" ;
     attack:name "Ingress Tool Transfer" ;
+    attack:domain "enterprise" ;
     attack:contains_by fx:ta0002 .
 fx:t1059-001 attack:subtechnique_of fx:t1105 .

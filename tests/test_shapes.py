@@ -26,6 +26,16 @@ DATATYPE_DEVIATIONS = {
 }
 
 
+# W3C vocabulary a shape may reference without an OWL declaration: the RDF
+# reification and collection terms (rdf:subject/predicate/object for reified
+# edges carrying edge properties, rdf:first/rdf:rest for aligned lists).
+BUILTIN_NAMESPACES = (str(RDF),)
+
+
+def _is_builtin(term) -> bool:
+    return isinstance(term, URIRef) and str(term).startswith(BUILTIN_NAMESPACES)
+
+
 def _severity_counts(results_graph: Graph) -> Counter:
     return Counter(
         qname(results_graph.value(r, SH.resultSeverity))
@@ -40,6 +50,10 @@ def _path_str(g: Graph, node):
     inv = g.value(node, SH.inversePath)
     if inv is not None:
         return "^" + _path_str(g, inv)
+    for pred, suffix in ((SH.zeroOrMorePath, "*"), (SH.oneOrMorePath, "+"), (SH.zeroOrOnePath, "?")):
+        inner = g.value(node, pred)
+        if inner is not None:
+            return _path_str(g, inner) + suffix
     alt = g.value(node, SH.alternativePath)
     if alt is not None:
         return "(" + "|".join(_path_str(g, m) for m in g.items(alt)) + ")"
@@ -77,7 +91,7 @@ def test_every_shape_reference_resolves_to_declared_owl_term(shapes, declared_te
     unresolved = set()
     for pred in (SH.path, SH["class"], SH.targetClass, SH.targetSubjectsOf, SH.targetObjectsOf):
         for _, o in shapes.subject_objects(pred):
-            if isinstance(o, URIRef) and o not in declared_terms:
+            if isinstance(o, URIRef) and o not in declared_terms and not _is_builtin(o):
                 unresolved.add(f"{qname(pred)} -> {qname(o)}")
     # Sequence / inverse paths are blank nodes; resolve their members too.
     for _, path in shapes.subject_objects(SH.path):
@@ -88,7 +102,7 @@ def test_every_shape_reference_resolves_to_declared_owl_term(shapes, declared_te
         if inv is not None:
             members.append(inv)
         for m in members:
-            if isinstance(m, URIRef) and m not in declared_terms:
+            if isinstance(m, URIRef) and m not in declared_terms and not _is_builtin(m):
                 unresolved.add(f"sh:path member -> {qname(m)}")
     assert not unresolved, "shape references not declared in any OWL module:\n  " + "\n  ".join(sorted(unresolved))
 

@@ -1,0 +1,14 @@
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# attck.shacl v1.1 PartOfDomainCoherenceShape: the enterprise technique T1059
+# is linked to the MOBILE "execution" tactic (TA0041) because the loader
+# matched the tactic by phaseName alone (2026-09-26 graph-quality review,
+# 618 spurious PART_OF edges). The mobile tactic itself is valid.
+fx:ta0041 a kgcs:Tactic ;
+    attack:attackId "TA0041" ;
+    attack:phaseName "execution" ;
+    attack:domain "mobile" .
+
+fx:t1059 attack:contains_by fx:ta0041 .

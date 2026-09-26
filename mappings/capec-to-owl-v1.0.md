@@ -419,3 +419,22 @@ capec:excludedCondition [ rdf:value "Does not apply in mobile context" ]
 4. **Status Filtering** - Implement ETL rules to handle Draft/Incomplete (do not load), Deprecated (audit trail), Stable/Usable (production)
 5. **Cross-Taxonomy Consistency** - Validate mapping quality indicators align with actual concept correspondence
 6. **Circular References** - Detect and prevent circular parent-child relationships in pattern hierarchy
+
+## v1.1 — `IMPLEMENTS` targets that are revoked or deprecated in ATT&CK
+
+`Taxonomy_Mappings` with `Taxonomy_Name = ATTACK` cite ATT&CK IDs from the
+ATT&CK release current when the CAPEC catalogue was published. CAPEC 3.9
+dates from January 2023, while the loaded ATT&CK bundles are much newer. The
+2026-09-26 graph-quality review found 15 of 272 CAPEC → ATT&CK rows citing
+revoked techniques. All 15 have a `revoked-by` successor (e.g.
+`T1562.001` → `T1685`, `T1574.002` → `T1574.001`). Four CAPEC →
+parent-technique pairs were lost because the roll-up landed on the revoked
+`T1562`.
+
+Rule (loader behaviour, no new term; defined once in
+`attck-to-owl-v1.0.md`, "v1.1 — Revoked and deprecated ATT&CK targets"):
+**bridge targets that are revoked are remapped via STIX `revoked-by` to the
+live successor; deprecated targets are dropped and counted.** The remap
+happens before the sub-technique → parent roll-up that `IMPLEMENTS`
+applies. SH-CORE-05 is unchanged: every `IMPLEMENTS` edge still starts at
+an `AttackPattern`.

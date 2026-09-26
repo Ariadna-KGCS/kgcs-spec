@@ -21,15 +21,15 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - Weakness: `cweId`, `abstraction`; **v1.1 enrichment** (`cwe-enrichment-v1.0.owl`, requires the enrichment-aware `load_cwe.py`): `description`, `mappingUsage`, `structure`, `status` required; `extendedDescription`, `mappingReasons`, `alternateTerms`, `likelihoodOfExploit`, `functionalAreas`, `affectedResources`, `modesOfIntroduction`, `ordinalities` optional
 - AttackPattern: `capecId`
 - Consequence: `consequenceId`, `scopes`, `impacts`, `likelihood`, `note` (**v1.1**, ADR-0001 sub-node of Weakness or AttackPattern; requires the consequence-aware loaders; leaf annotation, never a hop)
-- Technique: `attackId`
-- SubTechnique: `attackId`
-- Tactic: `attackId`
+- Technique: `attackId`, `domains` (string list with one element in the current graph; values `enterprise` / `mobile` / `ics`, the short form of STIX `x_mitre_domains` `enterprise-attack` / `mobile-attack` / `ics-attack`, written by `load_attck.py`; OWL `attack:domain`; required since v1.1)
+- SubTechnique: `attackId`, `domains` (v1.1)
+- Tactic: `attackId`, `phaseName` (label, **not a key**: shared across matrices), `domains` (v1.1)
 - DefensiveTechnique: `d3fendId`
 - DetectionAnalytic: `analyticId`
 - DeceptionTechnique: `techniqueId` (SHIELD technique identifier)
 - EngagementConcept: `activityId` / `approachId` / `goalId`
 - Score: `scoreId`, `version`, `baseScore`
-- BuildMetadata: `specVersion`, `buildTimestamp`, `pipelineCommit`, `sourceSnapshots` (**v1.1**, `build-metadata-v1.0.owl`; exactly one node per graph, written by the loader at load time; not part of the chain)
+- BuildMetadata: `specVersion`, `buildTimestamp`, `pipelineCommit`, `sourceSnapshots` (**v1.1**, `build-metadata-v1.0.owl`; exactly one node per graph, written by the loader at load time; not part of the chain). `sourceSnapshots` holds at most one `<SOURCE>=<release>` value per standard, naming the exact release loaded (`CAPEC=3.9`, `CWE=4.20`, `D3FEND=1.3.0`, and a single `ATTCK` key with a deterministic value: if all three bundles (enterprise, mobile, ics) carry an `x-mitre-collection` object with the same `x_mitre_version`, that release (`ATTCK=18.1`); otherwise `ATTCK=download:<date>;modified-max:<max modified across the three bundles>`. The `x-mitre-matrix` `x_mitre_version` (2.0 / 1.0) is that object's own version, not the ATT&CK release, and is never used. Today's STIX 2.0 bundles carry no `x-mitre-collection`, so the value is `ATTCK=download:2026-09-06;modified-max:2026-08-04`)
 
 ## Relationship Types (canonical)
 
@@ -38,13 +38,13 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 - `HAS_CONFIGURATION`: (Vulnerability)-[:HAS_CONFIGURATION]->(VulnerabilityConfiguration)
 - `HAS_NODE`: (VulnerabilityConfiguration)-[:HAS_NODE]->(VulnerabilityConfigurationNode)
 - `MATCHES_CRITERIA`: (VulnerabilityConfigurationNode)-[:MATCHES_CRITERIA]->(PlatformConfiguration)
-- `CAUSED_BY`: (Vulnerability)-[:CAUSED_BY]->(Weakness)
+- `CAUSED_BY`: (Vulnerability)-[:CAUSED_BY]->(Weakness) — exactly one edge per (CVE, CWE) pair. **v1.1 edge properties** (ADR-0002, `cve-weakness-provenance-v1.0.owl`; requires the provenance-aware `load_cwe.py`, which writes `CAUSED_BY`): `sources` (raw NVD `weaknesses[].source` identifiers, e.g. `nvd@nist.gov`, a CNA's, or `134c704f-9b21-4f2e-91b3-4a467353bcc0`), `sourceRoles` (`nvd`, `cna` or `adp`; `adp` = a declared ADP identifier, list in `mappings/cve-to-owl-v1.0.md`), `types` (`Primary` or `Secondary`) — string lists, index-aligned, one entry per assigning source, equal length. Lists because Neo4j has no map-valued properties. Edges from pre-v1.1 loaders carry none of the three (SHACL Warning, not an error).
 - `HAS_SCORE`: (Vulnerability)-[:HAS_SCORE]->(Score)
 - `REFERENCES`: (Vulnerability)-[:REFERENCES]->(Reference)
 - `DEMONSTRATED_BY`: (Weakness)-[:DEMONSTRATED_BY]->(AttackPattern) — OWL `kgcs:exploited_by`; the graph edge name is `DEMONSTRATED_BY` (`load_capec.py`, SH-CORE-04). v1.0 of this document listed it as `EXPLOITED_BY`, a name no loader writes.
 - `CHILD_OF`: (AttackPattern)-[:CHILD_OF]->(AttackPattern) — OWL `capec:childOf`; CAPEC abstraction hierarchy used by `inherited_via_parent_capec` mappings
 - `IMPLEMENTS`: (AttackPattern)-[:IMPLEMENTS]->(Technique) — OWL `kgcs:implemented_as` (naming layers are not 1:1); written by `load_attck.py` for parent techniques only, SH-CORE-05. v1.0 of this document listed it as `IMPLEMENTED_AS`, a name no loader writes.
-- `PART_OF`: (Technique)-[:PART_OF]->(Tactic)
+- `PART_OF`: (Technique)-[:PART_OF]->(Tactic) — tactic resolved by `attackId` within the same STIX bundle, never by `phaseName` alone; since v1.1 always within one ATT&CK domain (invariant 7)
 - `SUBTECHNIQUE_OF`: (SubTechnique)-[:SUBTECHNIQUE_OF]->(Technique)
 - `MITIGATED_BY`: (Technique)-[:MITIGATED_BY]->(DefensiveTechnique)
 - `DETECTED_BY`: (Technique)-[:DETECTED_BY]->(DetectionAnalytic)
@@ -65,6 +65,8 @@ Provide a machine- and human-readable summary of the Neo4j labels, key propertie
 4. Every response must include `provenance` (list of source IDs and sources) and `confidence` (object per the confidence-model spec maintained in `kgcs-server`; the envelope shape is `contracts/agent-consumable-schema.json`).
 5. `AFFECTS` is a compatibility projection over vulnerable applicability leaves, not the complete CVE boolean expression. The full expression is the applicability layer `HAS_CONFIGURATION → HAS_NODE → MATCHES_CRITERIA {vulnerable}` (`mappings/cve-applicability-to-owl-v1.0.md`); it refines the Vulnerability → PlatformConfiguration hop and is never presented as a hop of the chain.
 6. `Consequence` nodes are leaf annotations: no template may traverse through one (ADR-0001).
+7. `PART_OF` and `SUBTECHNIQUE_OF` never cross ATT&CK domains: every domain of the target Tactic is one of the Technique's `domains` (`attck.shacl.ttl` v1.1, `attack:PartOfDomainCoherenceShape`), and a SubTechnique shares a domain with its parent (`attack:SubtechniqueOfDomainCoherenceShape`). Graphs loaded before the loader fix violate this (59% spurious `PART_OF` on the 2026-09-26 snapshot); do not group by tactic on such a graph.
+8. `CAUSED_BY` provenance is edge metadata, not a hop: filter on it (`WHERE 'nvd' IN r.sourceRoles`), never materialise it as nodes on the traversal path (ADR-0002).
 
 ## Example Agent Response JSON Schema (excerpt)
 
@@ -94,4 +96,4 @@ CREATE CONSTRAINT unique_cpe IF NOT EXISTS ON (p:Platform) ASSERT p.cpeUri IS UN
 
 ## Recommended Machine Artifact
 
-Deliver a JSON Schema enumerating required node labels and their key properties and a small TSV mapping of relationship names to semantics for automated validation in agents. (See `contracts/agent-consumable-schema.json` — to be generated.)
+Deliver a JSON Schema enumerating required node labels and their key properties and a small TSV mapping of relationship names to semantics for automated validation in agents. (See `contracts/agent-consumable-schema.json` — the envelope is normative; since v1.1 its `definitions.CausedByEdgeProperties` gives the machine-readable form of the `CAUSED_BY` edge properties. The full label/relationship schema is still to be generated.)

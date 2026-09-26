@@ -177,5 +177,105 @@
         "severity": "sh:Violation"
       }
     ]
+  },
+  "part-of-cross-domain.ttl": {
+    "description": "attck.shacl v1.1 PART_OF domain coherence: enterprise technique linked to a mobile tactic",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:t1059",
+        "path": "attack#contains_by",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-unequal-lists.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance: aligned sources/sourceRoles/types lists of unequal length (ADR-0002)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-2-cwe-79",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-duplicate-statement.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance: two statements for one (CVE, CWE) pair - exactly one edge per pair (ADR-0002)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-1-cwe-79",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-1-cwe-79-dup",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-without-provenance.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance coverage: edge without provenance is a Warning (pre-v1.1 loaders)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-2",
+        "path": "core#caused_by",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Warning"
+      }
+    ]
+  },
+  "build-duplicate-source.ttl": {
+    "description": "build.shacl v1.1: two sourceSnapshots values for one SOURCE (CWE)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:build-3",
+        "path": "build#source_snapshot",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:build-3",
+        "path": "build#source_snapshot",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "subtechnique-cross-domain.ttl": {
+    "description": "attck.shacl v1.1 SUBTECHNIQUE_OF domain coherence: mobile sub-technique under an enterprise parent",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:t1059-099",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "domain-stix-long-form.ttl": {
+    "description": "attck.shacl v1.1 domains vocabulary: STIX long form enterprise-attack rejected (graph uses enterprise|mobile|ics)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ta0099",
+        "path": "attack#domain",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "caused-by-unknown-role.ttl": {
+    "description": "cve.shacl v1.2 CAUSED_BY provenance: sourceRoles member outside {nvd, cna, adp}",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cb-cve-3-cwe-79",
+        "path": "cve#weaknessSourceRoles/rdf:rest*/rdf:first",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
   }
 }

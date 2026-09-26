@@ -4,7 +4,29 @@ All notable changes to the KGCS standard. Consumers (`kgcs-pipeline`, `kgcs-serv
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-09-26
+
+First minor release on top of the frozen v1.0.0 baseline. No frozen `*-v1.0.owl` file is modified. The additions are eight versioned modules: CWE enrichment, CWE and CAPEC consequences, CVE applicability, CAUSED_BY provenance, graph labels, ATT&CK–core alignment and build metadata. Other additions are successor shapes (`attck` v1.1, `cve` v1.2, `cwe` v1.2, `capec` v1.1, `build` v1.1), ADR-0001/0002, the validation harness, and the fixes found by the 2026-09-26 graph-quality review (`kgcs-research` working notes on ATT&CK §0/§7, CWE §0b, CAPEC §1, D3FEND §5). The response envelope (`contracts/*.json` `version: "1.0"`) is unchanged; every contract change is additive. Hence a minor bump.
+
+### Upgrade notes for consumers
+
+- **Validation is stricter.** A graph loaded by a v1.0.0-era pipeline fails these shapes until it is re-ingested:
+  - `cwe.shacl.ttl` v1.1 enrichment `minCount` (already announced);
+  - `attck.shacl.ttl` v1.1 `domains` required on Technique, SubTechnique and Tactic (graph vocabulary `enterprise` / `mobile` / `ics`; kgcs-demo already complies);
+  - PART_OF domain coherence (`sh:Violation`). **Graphs loaded with kgcs-pipeline pinned to spec 1.0.0 fail this shape by design (618 edges on kgcs-demo). The kgcs-pipeline loader change in session Q5 fixes this.** There is no Warning phase and no 1.1.1. Checked by Cypher on kgcs-demo on 2026-09-26, this is the only v1.1 ATT&CK constraint the graph fails.
+
+  CAUSED_BY edges without provenance are only a Warning.
+- **`kgcs-pipeline` work implied by this release** (none of it is done here):
+  - `load_attck.py`: resolve tactics by `attackId` inside the STIX bundle, and apply the `revoked-by` remap to `IMPLEMENTS`.
+  - `load_d3fend.py`: apply the same remap to `MITIGATED_BY` and report drop counts.
+  - `load_cwe.py` (the loader that writes `CAUSED_BY`; not `load_cve.py`): write the `CAUSED_BY` provenance lists, with role `adp` for declared ADP identifiers.
+  - Build-metadata postscript: exact per-source releases, and the deterministic `ATTCK` value (today `ATTCK=download:2026-09-06;modified-max:2026-08-04`).
+
+  Each loader change needs a new dated snapshot. `PART_OF` shrinks (436 edges expected on the 2026-09-06 bundles); `CAUSED_BY` must stay 331,107 on the same raw data.
+
 ### Fixed
+
+- **PART_OF crossed ATT&CK domains undetected** (graph-quality review 2026-09-26, ATT&CK note §0). 618 of 1,054 `PART_OF` edges (59%) linked techniques to same-named tactics of other matrices, because the loader matched `Tactic {phaseName}`. SH-CORE-06 (`minCount 1`) cannot see this. Added `attack:PartOfDomainCoherenceShape` (`attck.shacl.ttl` v1.1, SHACL-SPARQL): every domain of the target Tactic must be one of the Technique's `domains`. `domains` maps to the frozen `attack:domain`, so no new term was needed. It is now required on Technique, SubTechnique and Tactic with the **graph vocabulary** `enterprise` / `mobile` / `ics`. `load_attck.py` writes these short forms, derived from the bundle file name; the STIX long forms `enterprise-attack` etc. are rejected. The equivalence is documented in the ATT&CK mapping doc and the divergence in `shapes/README.md`. Also added: `attack:SubtechniqueOfDomainCoherenceShape`: a SubTechnique shares a domain with its parent (0 of 540 cross-domain on kgcs-demo; regression guard). `mappings/attck-to-owl-v1.0.md` states the resolution rule: tactic `attackId` within the same STIX bundle, never `phaseName` alone. Its v1.0 relationship row cited a nonexistent `x_mitre_parent` and was corrected. `contracts/agent-consumable-schema.md` gains invariant 7. Fixtures: `part-of-cross-domain.ttl`, `subtechnique-cross-domain.ttl`, `domain-stix-long-form.ttl`.
 
 - `contracts/agent-consumable-schema.md`, relationship types cross-checked against every `MERGE` in `kgcs-pipeline/etl/*.py` (kgcs-demo fresh-load report 2026-09-06, findings 4 and 5): `IMPLEMENTED_AS` → `IMPLEMENTS` (OWL `kgcs:implemented_as` unchanged); `MATCHES_PLATFORM` added (written by `load_cpe.py`, absent from the list); `Vulnerability.published`/`lastModified` documented as ISO-8601 strings in the graph layer — `datetime(...)` comparisons return 0 rows silently, compare string-vs-string. OWL/SHACL keep `xsd:dateTime`; the layer divergence is listed in `shapes/README.md`. After this fix all 17 loader edge types and the contract list agree (`HAS_CONSEQUENCE` remains the one planned, loader-pending edge).
 - `contracts/agent-consumable-schema.md`: the Weakness → AttackPattern relationship was listed as `EXPLOITED_BY`, a name no loader writes; the graph edge is `DEMONSTRATED_BY` (`load_capec.py`, SH-CORE-04, OWL `kgcs:exploited_by`). `CHILD_OF` (CAPEC hierarchy, OWL `capec:childOf`) added. Dangling seed-repo path `docs/05-agents/confidence-model/spec.md` replaced (here and in `agent-consumable-schema.json`) by a pointer to the `kgcs-server` confidence-model spec. `docs/GLOSSARY.md`: dangling `rag-traversal-templates.md` reference replaced.
@@ -16,6 +38,15 @@ All notable changes to the KGCS standard. Consumers (`kgcs-pipeline`, `kgcs-serv
 
 ### Added
 
+- **CAUSED_BY provenance module v1.0** (`ontology/standards/cve-weakness-provenance-v1.0.owl`) + **ADR-0002** (`docs/adr/ADR-0002-caused-by-provenance.md`, Accepted 2026-09-26) + `shapes/cve.shacl.ttl` v1.2. The NVD `weaknesses[].source` / `.type` fields were discarded; this adds them (CWE note §0b: 37% of multi-CWE CVEs are NVD-vs-CNA disagreements).
+  - Storage model: **exactly one `CAUSED_BY` edge per (CVE, CWE) pair**, so the count stays 331,107 on the same raw data. The edge carries index-aligned string lists `sources` (raw source identifiers), `sourceRoles` (`nvd`/`cna`/`adp`; `adp` = a declared ADP identifier, today only `134c704f-9b21-4f2e-91b3-4a467353bcc0`, CISA ADP: 38,420 CWE assignments, all Secondary; 25,357 pairs exist only because of it) and `types` (`Primary`/`Secondary`), one entry per assigning source. Lists are used because Neo4j has no map-valued properties.
+  - RDF form: the edge is reified as `cve:CausedByStatement` (`rdf:Statement`), with `rdf:List` values for `cve:weaknessSources` / `cve:weaknessSourceRoles` / `cve:weaknessTypes`.
+  - Shapes: lists non-empty, equal length, closed vocabularies; one statement per pair, backed by a real `kgcs:caused_by` triple. An edge without provenance is a Warning.
+  - Contract: edge properties in `agent-consumable-schema.md` (invariant 8), and machine-readable `definitions.CausedByEdgeProperties` in `agent-consumable-schema.json` (additive; the envelope is unchanged).
+  - Mapping: `mappings/cve-to-owl-v1.0.md`, v1.1 section.
+  - Fixtures: the positive statement has NVD, CNA and ADP entries; negative cases `caused-by-unequal-lists.ttl`, `caused-by-duplicate-statement.ttl`, `caused-by-without-provenance.ttl`, `caused-by-unknown-role.ttl`.
+- **Revoked/deprecated ATT&CK bridge targets** (ATT&CK note §7, CAPEC note §1, D3FEND note §5): one rule for every bridge into ATT&CK, documented in the ATT&CK, CAPEC and D3FEND mapping docs. Revoked targets are remapped via STIX `revoked-by` to the live successor (before the sub-technique → parent roll-up); deprecated targets are dropped and counted. This is loader behaviour, with no new term.
+- `shapes/build.shacl.ttl` v1.1: at most one `sourceSnapshots` value per SOURCE, so each value names the exact release loaded (`CAPEC=3.9`, `CWE=4.20`, `D3FEND=1.3.0`). `ATTCK` is a single key with a deterministic value. If all three bundles carry an `x-mitre-collection` with the same `x_mitre_version`, the value is that release. Otherwise it is `download:<date>;modified-max:<max modified>`; today that is `ATTCK=download:2026-09-06;modified-max:2026-08-04`. The `x-mitre-matrix` version is never used. The per-source conventions are in `mappings/mapping-coverage-matrix-v1.1.md`, "Build metadata". `build-metadata-v1.0.owl` is unchanged: its `<SOURCE>=<snapshot>` string already carries any release identifier. Fixture: `build-duplicate-source.ttl`.
 - **Validation harness** (`tests/`, `requirements-dev.txt`, `pytest.ini`, `.github/workflows/validate.yml`): parse of every `.owl`/`.ttl` (zero-triple parses fail hard), meta-SHACL, OWL↔SHACL alignment (unresolved references, `sh:datatype` vs `rdfs:range`, allow-listed deviations must still exist), JSON Schema Draft-07 check + example validation, internal Markdown links, and an **ABox fixture** (`tests/fixtures/kgcs-abox.ttl`, one individual per node shape — a shape with no focus node fails the run) plus 13 negative cases in `tests/fixtures/negative/` whose exact results are pinned in `manifest.json`. Until now SHACL validation in the project ran against the OWL files as data and was vacuous (no instances → no focus nodes). Inference mode fixed to `alignment-owlrl` (OWL-RL closure over data + alignment modules only; full RDFS/OWL-RL over the frozen TBox over-types nodes because `attack:attackId` has eleven `rdfs:domain` classes).
 - **ATT&CK–core alignment module v1.0** (`ontology/extensions/attck-core-alignment-v1.0.owl`, ontology IRI `http://www.motherhacker.me/kgcs/ontology/attck-core-alignment#ATTCKCoreAlignmentOntology`): `attack:Technique ≡ kgcs:Technique`, `attack:Tactic ≡ kgcs:Tactic`, `attack:contains_by ≡ kgcs:belongs_to` (direction verified in both frozen files: Technique → Tactic), `attack:subtechnique_of ⊑ kgcs:subtechnique_of`. No new terms; nothing asserted about `attack:SubTechnique` (frozen `⊑ attack:Technique` contradicts the graph's disjoint label — recorded in `shapes/README.md`).
 - **Graph labels module v1.0** (`ontology/extensions/graph-labels-v1.0.owl`, ontology IRI `http://www.motherhacker.me/kgcs/ontology/graph-labels#GraphLabelsOntology`): declares `attack:name`, `attack:phaseName`, `car:title`, `cve:referenceUrl`, `d3fend:name`, `engage:name`, `shield:name` as datatype properties in their standards' namespaces (per-namespace properties chosen over `rdfs:label`; shapes and loaders unchanged).
@@ -40,6 +71,20 @@ All notable changes to the KGCS standard. Consumers (`kgcs-pipeline`, `kgcs-serv
 - `docs/EXTENDING.md`: templates rewritten in Turtle (the `.owl` files never were RDF/XML), paths corrected (`docs/docs/`, `shapes/<std>-shapes-v1.0.ttl`, `extensions/`, `src/etl/` no longer exist here), pipeline/server steps separated from spec steps, checklist aligned with the harness.
 - `shapes/README.md`: table updated for `cve` v1.1 / `cwe` v1.2 / `capec` v1.1 / `build`; label-property candidates closed; new sections "Alignment modules and inference mode" and "Known v1.0 deviations" (capecId, consequenceLikelihood, `attack:SubTechnique` hierarchy vs graph, SHIELD subclass, D3FEND `references_cwe`/`counters_attack_pattern` policy call, Engage/SHIELD individuals inside the TBox); validation instructions now point at `python -m pytest` here and `validation/validate_all_standards.py` in `kgcs-pipeline`.
 - `README.md`: layout, module convention, validation section; `CLAUDE.md`: verification-before-release is the harness.
+- Harness (`tests/`): shape paths may use `rdf:` terms (`rdf:subject`/`rdf:object`/`rdf:first`/`rdf:rest`) without an OWL declaration (`BUILTIN_NAMESPACES`); `sh:zeroOrMorePath`/`oneOrMorePath`/`zeroOrOnePath` render in manifest paths. At release: 106 tests, 21 negative cases (13 → 21 in this release).
+- SHACL-SPARQL severity is set on the node shape, where SHACL reads it; a severity set on `sh:SPARQLConstraint` is ignored (`shapes/README.md`).
+- `mappings/mapping-coverage-matrix-v1.1.md`: CAUSED_BY provenance rows, ATT&CK `PART_OF` downgraded to *partial* until the loader fix, `revoked-by` row, per-source snapshot table, ETL test priorities 7–9.
+
+### Pre-release corrections
+
+- `ontology/extensions/graph-labels-v1.0.owl`: the `attack:phaseName` comment called it the "Join key for PART_OF in the loader". It now says phaseName is not a join key and that PART_OF resolves by tactic `attackId` within the same STIX bundle. The file was never released: it is not in v1.0.0, and its only commit (e2403ff) is on no remote branch. So it was corrected in place, not versioned.
+- `CLAUDE.md` rule 1 clarified: a `*-vX.Y.owl` is sealed once it is part of a tagged release. Before its first tag it may be corrected, with a CHANGELOG note.
+
+### Not implemented (v1.2 candidates)
+
+- SUBTECHNIQUE_OF `attackId` prefix check (`T####.###` → parent `T####`); 0 mismatches on kgcs-demo today.
+- Per-domain ATT&CK snapshot keys (`ATTCK-ENTERPRISE=…` etc.); v1.1 keeps one `ATTCK` key.
+- SHACL check that each `sourceRoles` entry agrees with the `sources` entry at the same position (`nvd` ⇔ `nvd@nist.gov`, `adp` ⇔ declared ADP list). The shape checks vocabulary and list lengths only; role derivation is a loader rule.
 
 ### Removed
 

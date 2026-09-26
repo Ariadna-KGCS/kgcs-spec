@@ -28,7 +28,7 @@ per hop.
 ## Layout
 
 - `ontology/core/` — core OWL ontology (v1.0, **frozen**)
-- `ontology/standards/` — per-standard OWL modules: CPE, CVE, CVSS, CWE, CAPEC, ATT&CK, D3FEND, CAR, SHIELD, ENGAGE (v1.0, **frozen**), plus versioned modules scoped to one standard (`cwe-enrichment`, `cwe-consequences`, `capec-consequences`, `cve-applicability`)
+- `ontology/standards/` — per-standard OWL modules: CPE, CVE, CVSS, CWE, CAPEC, ATT&CK, D3FEND, CAR, SHIELD, ENGAGE (v1.0, **frozen**), plus versioned modules scoped to one standard (`cwe-enrichment`, `cwe-consequences`, `capec-consequences`, `cve-applicability`, `cve-weakness-provenance`)
 - `ontology/extensions/` — versioned cross-cutting modules: asset extension (v1.0, frozen), ATT&CK–core alignment, graph labels, build metadata
 - `shapes/` — SHACL shapes per standard + rule-engine spec
 - `mappings/` — standard→OWL mapping docs + coverage matrix
@@ -45,7 +45,7 @@ per hop.
 
 ## Status
 
-**v1.0.0** — frozen KGCS v1.0 baseline, migrated verbatim from the seed repo (OWL byte-identical). A v1.1.0 candidate (enrichment, consequences, alignment and applicability modules, validation harness) is `[Unreleased]` in `CHANGELOG.md`.
+**v1.1.0** (2026-09-26) — first minor release on top of the frozen v1.0 baseline. It adds versioned modules (CWE enrichment, consequences, CVE applicability, CAUSED_BY provenance, graph labels, ATT&CK–core alignment, build metadata), the validation harness, and the 2026-09-26 graph-quality fixes. See `CHANGELOG.md`. **v1.0.0**: the frozen KGCS v1.0 baseline, migrated verbatim from the seed repo (OWL byte-identical).
 
 ## Validation
 

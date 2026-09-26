@@ -127,6 +127,7 @@ def qname(term):
         .replace(KGCS_BASE, "")
         .replace("http://www.w3.org/2001/XMLSchema#", "xsd:")
         .replace("http://www.w3.org/ns/shacl#", "sh:")
+        .replace("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:")
     )
 
 
