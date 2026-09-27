@@ -1,0 +1,572 @@
+# KGCS Decision Extension SHACL Shapes v1.0
+#
+# Validates KevEntry, EpssScore and SsvcDecision nodes against the decision
+# extension (ontology/extensions/decision-extension-v1.0.owl, ADR-0003).
+#
+# Source standards: CISA KEV catalog JSON, FIRST EPSS daily CSV, SSVC v2.0.3
+# as published in NVD CVE JSON 2.0 metrics.ssvcV203[] (CISA ADP).
+# Enforcement level: STRICT (reject at ingest)
+#
+# Two invariants beyond field validation, both Hard Rule 2:
+#
+#   ADHERENCE. A decision node is a leaf hanging off exactly one hop, the
+#   Vulnerability. Each node shape is CLOSED (no property other than the
+#   declared ones may leave the node - so no edge to Weakness, AttackPattern,
+#   Technique or a defensive standard can exist), and an *AdherenceShape
+#   forbids any incoming edge other than the has_* edge from a Vulnerability
+#   whose cveId matches the node's own cveId.
+#
+#   NO OVERWRITE. EpssScore is one node per (CVE, score date) and SsvcDecision
+#   one per (CVE, timestamp); KevEntry is one per CVE. Uniqueness is a
+#   SHACL-SPARQL constraint here and a unique constraint on epssId / ssvcId /
+#   KevEntry.cveId in the graph.
+#
+# sh:closed lists rdf:type and owl:sameAs as ignored: the harness's OWL-RL
+# closure (tests/conftest.py, INFERENCE_MODE) asserts a reflexive owl:sameAs
+# on every node.
+#
+# Severity of SHACL-SPARQL constraints is read from the node shape
+# (shapes/README.md); all SPARQL constraints here are Violations.
+#
+# Key patterns (epssId, ssvcId) are loader-derived and therefore Warnings,
+# like vcId / vcnId. Source-defined patterns (KEV cveID, cwes) are
+# Violations because CISA's schema defines them.
+
+@prefix sh:       <http://www.w3.org/ns/shacl#> .
+@prefix xsd:      <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix kgcs:     <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:      <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix decision: <http://www.motherhacker.me/kgcs/ontology/decision#> .
+@prefix kev:      <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:     <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:     <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+
+# SPARQL prefix declarations for the constraints below (SHACL-SPARQL 1.0).
+decision:DecisionShapesPrefixes
+    a owl:Ontology ;
+    sh:declare [
+        sh:prefix "kgcs" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/core#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "cve" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/cve#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "kev" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/kev#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "epss" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/epss#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "ssvc" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/ssvc#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "owl" ;
+        sh:namespace "http://www.w3.org/2002/07/owl#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "rdf" ;
+        sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Vulnerability side: the three has_* edges
+#
+#   HAS_KEV_ENTRY  at most one KevEntry per Vulnerability
+#   HAS_EPSS       any number of EpssScore (one per score date)
+#   HAS_SSVC       any number of SsvcDecision (one per ADP timestamp)
+#
+# The target class of each edge is checked here; the identity of the CVE on
+# both ends is checked on the leaf (SPARQL below).
+# ---------------------------------------------------------------------------
+
+decision:VulnerabilityDecisionEdgesShape
+    a sh:NodeShape ;
+    sh:targetClass kgcs:Vulnerability ;
+    sh:property [
+        sh:path kev:has_kev_entry ;
+        sh:class kev:KevEntry ;
+        sh:maxCount 1 ;
+        sh:message "HAS_KEV_ENTRY must target a KevEntry, at most one per Vulnerability (one KEV catalog entry per CVE)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:has_epss ;
+        sh:class epss:EpssScore ;
+        sh:message "HAS_EPSS must target an EpssScore." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:has_ssvc ;
+        sh:class ssvc:SsvcDecision ;
+        sh:message "HAS_SSVC must target an SsvcDecision." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# KevEntry (CISA known_exploited_vulnerabilities.json, vulnerabilities[])
+#
+# Required fields per the CISA schema: cveID, vendorProject, product,
+# vulnerabilityName, dateAdded, shortDescription, requiredAction, dueDate.
+# Optional: knownRansomwareCampaignUse (Known|Unknown), forensicTriage
+# (Yes|No), notes, cwes[]. catalogVersion / dateReleased come from the file
+# header and are the provenance of the refresh.
+# ---------------------------------------------------------------------------
+
+kev:KevEntryShape
+    a sh:NodeShape ;
+    sh:targetClass kev:KevEntry ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    # cveID: key, CISA pattern
+    sh:property [
+        sh:path kev:cve_id ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CVE-[0-9]{4}-[0-9]{4,19}$" ;
+        sh:message "KevEntry must have exactly one cveId matching the CISA pattern ^CVE-[0-9]{4}-[0-9]{4,19}$." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:vendor_project ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one vendorProject." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:product ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one product." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:vulnerability_name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one vulnerabilityName." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:date_added ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one dateAdded (xsd:date, YYYY-MM-DD)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:short_description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one shortDescription." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:required_action ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one requiredAction." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:due_date ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one dueDate (xsd:date, YYYY-MM-DD)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # knownRansomwareCampaignUse: optional in the CISA schema, so absence is a
+    # Warning; a present value must be one of the two CISA strings.
+    sh:property [
+        sh:path kev:known_ransomware_campaign_use ;
+        sh:minCount 1 ;
+        sh:message "KevEntry should carry knownRansomwareCampaignUse (present on every current catalog entry; optional in the CISA schema)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path kev:known_ransomware_campaign_use ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "Known" "Unknown" ) ;
+        sh:message "KevEntry.knownRansomwareCampaignUse must be Known or Unknown." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:forensic_triage ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "Yes" "No" ) ;
+        sh:message "KevEntry.forensicTriage must be Yes or No when present (BOD 26-04)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:notes ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry.notes must be a single string when present." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # cwes: strings only, CISA pattern; never an edge to a Weakness
+    sh:property [
+        sh:path kev:cwes ;
+        sh:datatype xsd:string ;
+        sh:pattern "^CWE-([0-9])+$" ;
+        sh:message "KevEntry.cwes values must match the CISA pattern ^CWE-([0-9])+$ (strings on the entry, never edges)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:catalog_version ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry must have exactly one catalogVersion (top-level catalogVersion of the loaded catalog)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kev:catalog_version ;
+        sh:pattern "^\\d{4}\\.\\d{2}\\.\\d{2}$" ;
+        sh:message "KevEntry.catalogVersion should look like YYYY.MM.DD (CISA's current convention)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path kev:date_released ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+        sh:message "KevEntry.dateReleased must be a single xsd:dateTime when present." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # one KevEntry per CVE
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "Exactly one KevEntry per CVE: another KevEntry carries the same cveId." ;
+        sh:select """
+            SELECT $this WHERE {
+                $this kev:cve_id ?id .
+                ?other a kev:KevEntry ; kev:cve_id ?id .
+                FILTER (?other != $this)
+            }
+        """ ;
+    ] , [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "A KevEntry must be adhered to the Vulnerability whose cveId equals its own cveId." ;
+        sh:select """
+            SELECT $this WHERE {
+                ?v kev:has_kev_entry $this ; cve:cveId ?vid .
+                $this kev:cve_id ?id .
+                FILTER (STR(?vid) != STR(?id))
+            }
+        """ ;
+    ] .
+
+# Adherence guard: the only edge that may reach a KevEntry is HAS_KEV_ENTRY
+# from a Vulnerability. (owl:sameAs is the reflexive triple of the harness
+# closure; rdf:object would appear only if someone reified an edge onto the
+# node, which is also forbidden.)
+kev:KevEntryAdherenceShape
+    a sh:NodeShape ;
+    sh:targetClass kev:KevEntry ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "A KevEntry is adhered to a Vulnerability only: no edge other than HAS_KEV_ENTRY from a Vulnerability may point at it (Hard Rule 2; ADR-0003)." ;
+        sh:select """
+            SELECT $this ?path WHERE {
+                ?s ?path $this .
+                FILTER (?path != owl:sameAs)
+                FILTER (?path != kev:has_kev_entry || NOT EXISTS { ?s a kgcs:Vulnerability })
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# EpssScore (FIRST daily CSV row + header)
+# ---------------------------------------------------------------------------
+
+epss:EpssScoreShape
+    a sh:NodeShape ;
+    sh:targetClass epss:EpssScore ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    sh:property [
+        sh:path epss:epss_id ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "EpssScore must have exactly one epssId." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:epss_id ;
+        sh:pattern "^CVE-\\d{4}-\\d+::EPSS::\\d{4}-\\d{2}-\\d{2}$" ;
+        sh:message "epssId should match <cveId>::EPSS::<scoreDate> (loader-derived key format)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path epss:cve_id ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CVE-\\d{4}-\\d+$" ;
+        sh:message "EpssScore must have exactly one cveId (CSV column cve)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:score ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+        sh:message "EpssScore.score must be exactly one decimal in [0, 1] (CSV column epss, verbatim)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:percentile ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0.0 ;
+        sh:maxInclusive 1.0 ;
+        sh:message "EpssScore.percentile must be exactly one decimal in [0, 1]." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:score_date ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "EpssScore must have exactly one scoreDate (xsd:date; date part of the header score_date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:score_timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+        sh:message "EpssScore.scoreTimestamp must be a single xsd:dateTime when present (header score_date verbatim)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:model_version ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "EpssScore must have exactly one modelVersion (header model_version)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path epss:model_version ;
+        sh:pattern "^v\\d{4}\\.\\d{2}\\.\\d{2}$" ;
+        sh:message "EpssScore.modelVersion should look like vYYYY.MM.DD (FIRST's convention since v2022.01.01)." ;
+        sh:severity sh:Warning ;
+    ] ;
+
+    # one EpssScore per (CVE, score date); adhered to the right CVE
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "One EpssScore per CVE per score date: another EpssScore carries the same cveId and scoreDate (scores are never overwritten, only added)." ;
+        sh:select """
+            SELECT $this WHERE {
+                $this epss:cve_id ?id ; epss:score_date ?d .
+                ?other a epss:EpssScore ; epss:cve_id ?id ; epss:score_date ?d .
+                FILTER (?other != $this)
+            }
+        """ ;
+    ] , [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "An EpssScore must be adhered to the Vulnerability whose cveId equals its own cveId." ;
+        sh:select """
+            SELECT $this WHERE {
+                ?v epss:has_epss $this ; cve:cveId ?vid .
+                $this epss:cve_id ?id .
+                FILTER (STR(?vid) != STR(?id))
+            }
+        """ ;
+    ] .
+
+epss:EpssScoreAdherenceShape
+    a sh:NodeShape ;
+    sh:targetClass epss:EpssScore ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "An EpssScore is adhered to a Vulnerability only: no edge other than HAS_EPSS from a Vulnerability may point at it (Hard Rule 2; ADR-0003)." ;
+        sh:select """
+            SELECT $this ?path WHERE {
+                ?s ?path $this .
+                FILTER (?path != owl:sameAs)
+                FILTER (?path != epss:has_epss || NOT EXISTS { ?s a kgcs:Vulnerability })
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# SsvcDecision (NVD metrics.ssvcV203[], CISA ADP)
+# ---------------------------------------------------------------------------
+
+ssvc:SsvcDecisionShape
+    a sh:NodeShape ;
+    sh:targetClass ssvc:SsvcDecision ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    sh:property [
+        sh:path ssvc:ssvc_id ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SsvcDecision must have exactly one ssvcId." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:ssvc_id ;
+        sh:pattern "^CVE-\\d{4}-\\d+::SSVC::\\d{4}-\\d{2}-\\d{2}T.+$" ;
+        sh:message "ssvcId should match <cveId>::SSVC::<timestamp> (loader-derived key format, timestamp verbatim)." ;
+        sh:severity sh:Warning ;
+    ] ;
+    sh:property [
+        sh:path ssvc:cve_id ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^CVE-\\d{4}-\\d+$" ;
+        sh:message "SsvcDecision must have exactly one cveId (ssvcData.id)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # version: only the SSVC version NVD publishes under ssvcV203
+    sh:property [
+        sh:path ssvc:version ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "2.0.3" ) ;
+        sh:message "SsvcDecision.version must be 2.0.3 (the version NVD publishes under ssvcV203; a new version is a spec change)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:timestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SsvcDecision must have exactly one timestamp (xsd:dateTime; ADP publication instant)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:exploitation ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "none" "poc" "active" ) ;
+        sh:message "SsvcDecision.exploitation must be exactly one of none, poc, active." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:automatable ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "no" "yes" ) ;
+        sh:message "SsvcDecision.automatable must be exactly one of no, yes." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:technical_impact ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "partial" "total" ) ;
+        sh:message "SsvcDecision.technicalImpact must be exactly one of partial, total." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:role ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SsvcDecision must have exactly one role (ssvcData.role, verbatim)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path ssvc:source ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "SsvcDecision must have exactly one source (NVD source identifier of the publisher, verbatim)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # v1.0 scope: only declared ADPs publish SsvcDecisions
+    sh:property [
+        sh:path ssvc:source_role ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "adp" ) ;
+        sh:message "SsvcDecision.sourceRole must be adp: v1.0 loads SSVC decisions of declared Authorized Data Publishers only (ADR-0003)." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # one SsvcDecision per (CVE, timestamp); adhered to the right CVE
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "One SsvcDecision per CVE per ADP timestamp: another SsvcDecision carries the same cveId and timestamp (exact duplicates in the feed collapse to one)." ;
+        sh:select """
+            SELECT $this WHERE {
+                $this ssvc:cve_id ?id ; ssvc:timestamp ?t .
+                ?other a ssvc:SsvcDecision ; ssvc:cve_id ?id ; ssvc:timestamp ?t .
+                FILTER (?other != $this)
+            }
+        """ ;
+    ] , [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "An SsvcDecision must be adhered to the Vulnerability whose cveId equals its own cveId." ;
+        sh:select """
+            SELECT $this WHERE {
+                ?v ssvc:has_ssvc $this ; cve:cveId ?vid .
+                $this ssvc:cve_id ?id .
+                FILTER (STR(?vid) != STR(?id))
+            }
+        """ ;
+    ] .
+
+ssvc:SsvcDecisionAdherenceShape
+    a sh:NodeShape ;
+    sh:targetClass ssvc:SsvcDecision ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes decision:DecisionShapesPrefixes ;
+        sh:message "An SsvcDecision is adhered to a Vulnerability only: no edge other than HAS_SSVC from a Vulnerability may point at it (Hard Rule 2; ADR-0003)." ;
+        sh:select """
+            SELECT $this ?path WHERE {
+                ?s ?path $this .
+                FILTER (?path != owl:sameAs)
+                FILTER (?path != ssvc:has_ssvc || NOT EXISTS { ?s a kgcs:Vulnerability })
+            }
+        """ ;
+    ] .

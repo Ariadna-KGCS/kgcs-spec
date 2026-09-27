@@ -1,0 +1,23 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl: a second KevEntry for CVE-2024-0001 - exactly one per CVE
+# (KevEntryShape SPARQL on both entries) and HAS_KEV_ENTRY maxCount 1 on the
+# Vulnerability (VulnerabilityDecisionEdgesShape).
+fx:cve-1 kev:has_kev_entry fx:kev-dup .
+fx:kev-dup a kev:KevEntry ;
+    kev:cve_id "CVE-2024-0001" ;
+    kev:vendor_project "Vendor" ;
+    kev:product "Product" ;
+    kev:vulnerability_name "Vendor Product Cross-Site Scripting Vulnerability" ;
+    kev:date_added "2024-03-01"^^xsd:date ;
+    kev:short_description "Duplicate entry." ;
+    kev:required_action "Apply mitigations per vendor instructions." ;
+    kev:due_date "2024-03-22"^^xsd:date ;
+    kev:known_ransomware_campaign_use "Unknown" ;
+    kev:catalog_version "2026.09.24" .

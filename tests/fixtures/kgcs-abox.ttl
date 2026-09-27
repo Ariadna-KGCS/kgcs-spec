@@ -25,6 +25,9 @@
 @prefix shield: <http://www.motherhacker.me/kgcs/ontology/shield#> .
 @prefix engage: <http://www.motherhacker.me/kgcs/ontology/engage#> .
 @prefix build:  <http://www.motherhacker.me/kgcs/ontology/build#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
 @prefix fx:     <urn:kgcs:fixture:> .
 
 # --- CPE ---------------------------------------------------------------------
@@ -54,6 +57,9 @@ fx:cve-1 a kgcs:Vulnerability ;
     cve:has_configuration fx:vc-1 ;
     cve:references fx:ref-1 ;
     cvss:hasScore fx:score-1 ;
+    kev:has_kev_entry fx:kev-1 ;
+    epss:has_epss fx:epss-1 ;
+    ssvc:has_ssvc fx:ssvc-1 ;
     kgcs:caused_by fx:cwe-79 .
 
 # NVD applicability layer (cve-applicability-v1.0.owl): the AFFECTS edge above
@@ -90,6 +96,49 @@ fx:score-1 a cvss:Score ;
     cvss:scoreId "CVE-2024-0001_3.1" ;
     cvss:version "3.1" ;
     cvss:baseScore "7.5"^^xsd:decimal .
+
+# --- Decision extension (decision-extension-v1.0.owl, ADR-0003) --------------
+# Three leaf nodes adhered to cve-1: a KEV catalog entry, one EPSS daily score
+# and one CISA ADP SSVC decision. Values follow the raw formats verified on
+# 2026-09-27 (KEV catalog 2026.09.25, EPSS file of 2026-09-27 with model
+# v2026.06.15, NVD ssvcV203 entries). No edge leaves them (closed shapes).
+
+fx:kev-1 a kev:KevEntry ;
+    kev:cve_id "CVE-2024-0001" ;
+    kev:vendor_project "Vendor" ;
+    kev:product "Product" ;
+    kev:vulnerability_name "Vendor Product Cross-Site Scripting Vulnerability" ;
+    kev:date_added "2024-03-01"^^xsd:date ;
+    kev:short_description "Vendor Product contains a cross-site scripting vulnerability that allows an attacker to execute script in the browser of a victim." ;
+    kev:required_action "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable." ;
+    kev:due_date "2024-03-22"^^xsd:date ;
+    kev:known_ransomware_campaign_use "Unknown" ;
+    kev:forensic_triage "No" ;
+    kev:cwes "CWE-79" ;
+    kev:notes "https://example.org/advisory/2024-0001 ; https://nvd.nist.gov/vuln/detail/CVE-2024-0001" ;
+    kev:catalog_version "2026.09.25" ;
+    kev:date_released "2026-09-25T18:58:16.502Z"^^xsd:dateTime .
+
+fx:epss-1 a epss:EpssScore ;
+    epss:epss_id "CVE-2024-0001::EPSS::2026-09-27" ;
+    epss:cve_id "CVE-2024-0001" ;
+    epss:score "0.03351"^^xsd:decimal ;
+    epss:percentile "0.88245"^^xsd:decimal ;
+    epss:score_date "2026-09-27"^^xsd:date ;
+    epss:score_timestamp "2026-09-27T12:00:21Z"^^xsd:dateTime ;
+    epss:model_version "v2026.06.15" .
+
+fx:ssvc-1 a ssvc:SsvcDecision ;
+    ssvc:ssvc_id "CVE-2024-0001::SSVC::2025-04-18T15:23:16.425380Z" ;
+    ssvc:cve_id "CVE-2024-0001" ;
+    ssvc:version "2.0.3" ;
+    ssvc:timestamp "2025-04-18T15:23:16.425380Z"^^xsd:dateTime ;
+    ssvc:exploitation "none" ;
+    ssvc:automatable "no" ;
+    ssvc:technical_impact "total" ;
+    ssvc:role "CISA Coordinator" ;
+    ssvc:source "134c704f-9b21-4f2e-91b3-4a467353bcc0" ;
+    ssvc:source_role "adp" .
 
 # --- CWE (identity + enrichment v1.1 + consequence v1.2) ---------------------
 
@@ -181,8 +230,9 @@ fx:eac0001 kgcs:disrupts fx:t1059 .
 # --- Build metadata (build-metadata-v1.0.owl) --------------------------------
 
 fx:build-1 a build:BuildMetadata ;
-    build:spec_version "1.1.0" ;
+    build:spec_version "1.2.0" ;
     build:build_timestamp "2026-09-06T12:00:00Z"^^xsd:dateTime ;
     build:pipeline_commit "b681e90" ;
     build:source_snapshot "CWE=4.20" , "CAPEC=3.9" , "D3FEND=1.3.0" ,
-        "ATTCK=download:2026-09-06;modified-max:2026-08-04" , "CVE=2026-09-01T03:00:00Z" .
+        "ATTCK=download:2026-09-06;modified-max:2026-08-04" , "CVE=2026-09-01T03:00:00Z" ,
+        "KEV=2026.09.25" , "EPSS=2026-09-27;model:v2026.06.15" .

@@ -1,0 +1,22 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl SsvcDecisionShape: a second SsvcDecision for CVE-2024-0001 with
+# the same timestamp - one per CVE per ADP timestamp (both nodes are reported).
+fx:cve-1 ssvc:has_ssvc fx:ssvc-dup .
+fx:ssvc-dup a ssvc:SsvcDecision ;
+    ssvc:ssvc_id "CVE-2024-0001::SSVC::2025-04-18T15:23:16.425380Z" ;
+    ssvc:cve_id "CVE-2024-0001" ;
+    ssvc:version "2.0.3" ;
+    ssvc:timestamp "2025-04-18T15:23:16.425380Z"^^xsd:dateTime ;
+    ssvc:exploitation "poc" ;
+    ssvc:automatable "no" ;
+    ssvc:technical_impact "total" ;
+    ssvc:role "CISA Coordinator" ;
+    ssvc:source "134c704f-9b21-4f2e-91b3-4a467353bcc0" ;
+    ssvc:source_role "adp" .

@@ -70,7 +70,7 @@ std:relates_to a owl:ObjectProperty ;
     rdfs:comment "Graph relationship: RELATES_TO. Must not skip a hop of the causal chain." .
 ```
 
-The namespace must be listed in the current `docs/namespace-policy-vX.Y.md`; a new standard needs a policy successor that adds it.
+The namespace must be listed in the current `docs/namespace-policy-vX.Y.md` (v1.2 at the time of writing); a new standard needs a policy successor that adds it.
 
 ### Step 2: Write the Mapping Doc
 
@@ -148,7 +148,7 @@ ext:assesses a owl:ObjectProperty ;
     rdfs:range kgcs:Vulnerability .   # reference core classes, never redefine them
 ```
 
-The extension namespace must be added by a namespace-policy successor (`docs/namespace-policy-v1.1.md` is the current one; `asset:` and `build:` are the registered extension namespaces).
+The extension namespace must be added by a namespace-policy successor (`docs/namespace-policy-v1.2.md` is the current one; `asset:`, `build:` and `decision:` are the registered extension namespaces, and `kev:`, `epss:`, `ssvc:` the decision-layer standard namespaces). A node that annotates one class of the chain without being a hop of it (Consequence, the decision leaves) should be **closed** in SHACL and guarded against foreign incoming edges — see `shapes/decision.shacl.ttl` and ADR-0003 for the pattern.
 
 ### Step 2: Create SHACL Shapes
 
@@ -266,7 +266,8 @@ If future work adds an LLM for richer natural-language understanding, it must si
 ## References
 
 - [GLOSSARY.md](GLOSSARY.md) — Existing standards + relationships
-- [namespace-policy-v1.1.md](namespace-policy-v1.1.md) — Registered namespaces
+- [namespace-policy-v1.2.md](namespace-policy-v1.2.md) — Registered namespaces
 - [adr/ADR-0001-consequence-subnodes.md](adr/ADR-0001-consequence-subnodes.md) — Worked example of a versioned module decision
+- [adr/ADR-0003-decision-extension.md](adr/ADR-0003-decision-extension.md) — Worked example of an adhered-leaf extension (closed shapes, no chain edges, dated append-only scores)
 - `../shapes/README.md` — Shape conventions, alignment modules, inference mode
 - Example loaders: `etl/load_cpe.py`, `etl/load_cve.py` (in `kgcs-pipeline`)

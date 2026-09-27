@@ -1,0 +1,28 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl SsvcDecisionShape: a CNA-role SSVC entry (ics-cert@hq.dhs.gov,
+# role CNA) loaded as a decision - v1.0 admits declared ADPs only (ADR-0003).
+# A second Vulnerability with no CAUSED_BY (so no provenance Warning).
+fx:cve-2 a kgcs:Vulnerability ;
+    cve:cveId "CVE-2024-0002" ;
+    cve:published "2024-04-01T08:00:00Z"^^xsd:dateTime ;
+    cve:source "nvd@nist.gov" .
+
+fx:cve-2 ssvc:has_ssvc fx:ssvc-2 .
+fx:ssvc-2 a ssvc:SsvcDecision ;
+    ssvc:ssvc_id "CVE-2024-0002::SSVC::2026-01-29T20:28:37.966375Z" ;
+    ssvc:cve_id "CVE-2024-0002" ;
+    ssvc:version "2.0.3" ;
+    ssvc:timestamp "2026-01-29T20:28:37.966375Z"^^xsd:dateTime ;
+    ssvc:exploitation "none" ;
+    ssvc:automatable "yes" ;
+    ssvc:technical_impact "total" ;
+    ssvc:role "CNA" ;
+    ssvc:source "ics-cert@hq.dhs.gov" ;
+    ssvc:source_role "cna" .

@@ -1,0 +1,23 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl EpssScoreShape: score above 1.
+# A second Vulnerability with no CAUSED_BY (so no provenance Warning).
+fx:cve-2 a kgcs:Vulnerability ;
+    cve:cveId "CVE-2024-0002" ;
+    cve:published "2024-04-01T08:00:00Z"^^xsd:dateTime ;
+    cve:source "nvd@nist.gov" .
+
+fx:cve-2 epss:has_epss fx:epss-2 .
+fx:epss-2 a epss:EpssScore ;
+    epss:epss_id "CVE-2024-0002::EPSS::2026-09-27" ;
+    epss:cve_id "CVE-2024-0002" ;
+    epss:score "1.5"^^xsd:decimal ;
+    epss:percentile "0.98035"^^xsd:decimal ;
+    epss:score_date "2026-09-27"^^xsd:date ;
+    epss:model_version "v2026.06.15" .

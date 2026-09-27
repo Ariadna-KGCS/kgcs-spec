@@ -18,6 +18,9 @@
 | **CAR** | Detection analytics | MITRE | Latest |
 | **SHIELD** | Deception techniques | MITRE | Latest |
 | **ENGAGE** | Engagement concepts | MITRE | Latest |
+| **KEV** (v1.2) | Known exploited vulnerabilities catalog | CISA | catalog `2026.09.25` at the time of writing |
+| **EPSS** (v1.2) | Exploitation probability, daily | FIRST | model `v2026.06.15` |
+| **SSVC** (v1.2) | Stakeholder-specific vulnerability categorization decisions | CISA (ADP) via NVD `ssvcV203` | 2.0.3 |
 
 ---
 
@@ -170,6 +173,33 @@
 
 ---
 
+### Decision layer (v1.2, ADR-0003)
+
+Three leaf nodes adhered to a Vulnerability by one edge each. They are
+enrichment of the CVE hop: never a hop of the chain, never connected to
+CWE, CAPEC, ATT&CK or the defensive standards, never traversed through.
+
+- **KevEntry** — the CISA KEV catalog entry of a CVE. Key `cveId` (exactly
+  one per CVE); `dateAdded`, `dueDate`, `requiredAction`,
+  `knownRansomwareCampaignUse`, `forensicTriage`, `vendorProject`,
+  `product`, `cwes` (strings, never edges), `catalogVersion`. Edge
+  `HAS_KEV_ENTRY`. Refreshed in place from the current catalog.
+- **EpssScore** — one FIRST EPSS daily score of a CVE: `score` (probability
+  of exploitation activity in 30 days, as published), `percentile`,
+  `scoreDate`, `modelVersion`. Key `epssId` = `<cveId>::EPSS::<scoreDate>`;
+  one per CVE per date, never overwritten. Edge `HAS_EPSS`. Not a CVSS
+  `Score`. A published datum: KGCS never computes with it and it is not an
+  input to *Confidence*.
+- **SsvcDecision** — one CISA ADP SSVC v2.0.3 decision on a CVE:
+  `exploitation` (none / poc / active), `automatable` (no / yes),
+  `technicalImpact` (partial / total), `timestamp`, `version`, `source`,
+  `sourceRole` (`adp`). Key `ssvcId` = `<cveId>::SSVC::<timestamp>`; one per
+  CVE per ADP timestamp. Edge `HAS_SSVC`.
+
+The *Risk* term above (ACCEPT / MITIGATE / TRANSFER / AVOID) remains the
+organisation's own decision in the Risk extension; KEV, EPSS and SSVC are
+the published inputs it may cite, with date and provenance.
+
 ## Causal Chain (Critical Invariant)
 
 ```text
@@ -238,6 +268,9 @@ Technique (ATT&CK Tactic/Technique)
 | CVE | Platform | `affects` | This vulnerability impacts this platform |
 | CVE | CWE | `caused_by` | This CVE stems from this weakness |
 | CVE | Score | `has_score` | This CVE has this CVSS assessment |
+| CVE | KevEntry | `has_kev_entry` (`HAS_KEV_ENTRY`) | CISA lists this CVE as known exploited (v1.2, leaf) |
+| CVE | EpssScore | `has_epss` (`HAS_EPSS`) | FIRST published this exploitation probability for this CVE on this date (v1.2, leaf) |
+| CVE | SsvcDecision | `has_ssvc` (`HAS_SSVC`) | CISA ADP published this SSVC decision for this CVE at this instant (v1.2, leaf) |
 | CWE | CWE | `child_of`, `parent_of`, `peer_of` | CWE hierarchy |
 | CWE | CAPEC | `demonstrated_by` | This weakness can be exploited via this attack pattern |
 | CAPEC | Technique | `enables` | This attack pattern corresponds to this ATT&CK technique |
@@ -312,6 +345,9 @@ ThreatActor: "APT-X (HIGH confidence)"
 - `governance.md` (in `kgcs-server`) — Data policies
 - Approved Cypher query templates — `agents/*/cypher_templates.py` (in `kgcs-server`)
 - NVD: <https://nvd.nist.gov/>
+- CISA KEV: <https://www.cisa.gov/known-exploited-vulnerabilities-catalog>
+- FIRST EPSS: <https://www.first.org/epss/>
+- CISA SSVC: <https://www.cisa.gov/ssvc>
 - MITRE ATT&CK: <https://attack.mitre.org/>
 - MITRE CWE: <https://cwe.mitre.org/>
 - MITRE CAPEC: <https://capec.mitre.org/>

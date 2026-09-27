@@ -1,0 +1,11 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl EpssScoreAdherenceShape: a Technique pointing at an EpssScore
+# (MITIGATED_BY) - decision nodes are adhered to Vulnerability only.
+fx:t1059 kgcs:mitigated_by fx:epss-1 .

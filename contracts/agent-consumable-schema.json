@@ -156,6 +156,264 @@
       "examples": [
         { "sources": ["nvd@nist.gov", "secalert@redhat.com", "134c704f-9b21-4f2e-91b3-4a467353bcc0"], "sourceRoles": ["nvd", "cna", "adp"], "types": ["Primary", "Secondary", "Secondary"] }
       ]
+    },
+    "KevEntryProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0003). Graph-layer properties of a KevEntry node (CISA Known Exploited Vulnerabilities catalog entry), adhered to exactly one Vulnerability by HAS_KEV_ENTRY; exactly one KevEntry per CVE. Not part of the response envelope: referenced by per-agent response schemas and loader tests. Dates are ISO strings as CISA publishes them.",
+      "type": "object",
+      "required": [
+        "cveId",
+        "vendorProject",
+        "product",
+        "vulnerabilityName",
+        "dateAdded",
+        "shortDescription",
+        "requiredAction",
+        "dueDate",
+        "catalogVersion"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cveId": {
+          "type": "string",
+          "pattern": "^CVE-[0-9]{4}-[0-9]{4,19}$",
+          "description": "KEV cveID, verbatim (CISA pattern). Unique on the KevEntry label."
+        },
+        "vendorProject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "product": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vulnerabilityName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dateAdded": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD, the date the CVE entered the catalog."
+        },
+        "shortDescription": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requiredAction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dueDate": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD, the date the required action is due."
+        },
+        "knownRansomwareCampaignUse": {
+          "type": "string",
+          "enum": [
+            "Known",
+            "Unknown"
+          ]
+        },
+        "forensicTriage": {
+          "type": "string",
+          "enum": [
+            "Yes",
+            "No"
+          ],
+          "description": "Whether BOD 26-04 requires forensic triage (CISA field added in 2026)."
+        },
+        "notes": {
+          "type": "string"
+        },
+        "cwes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^CWE-([0-9])+$"
+          },
+          "description": "KEV cwes[], verbatim strings. Never materialised as CAUSED_BY edges (ADR-0003)."
+        },
+        "catalogVersion": {
+          "type": "string",
+          "description": "Top-level catalogVersion of the catalog file the entry was loaded from, e.g. 2026.09.25."
+        },
+        "dateReleased": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Top-level dateReleased of that catalog file."
+        }
+      },
+      "examples": [
+        {
+          "cveId": "CVE-2026-67279",
+          "vendorProject": "MikroTik",
+          "product": "RouterOS",
+          "vulnerabilityName": "Mikrotik RouterOS Improper Enforcement of Behavioral Workflow Vulnerability",
+          "dateAdded": "2026-09-25",
+          "shortDescription": "Mikrotik RouterOS contains an improper enforcement of behavioral workflow vulnerability that could allow an unauthenticated client to open a session channel and send an exec request.",
+          "requiredAction": "Apply vendor mitigations per BOD 26-04 guidance",
+          "dueDate": "2026-09-28",
+          "knownRansomwareCampaignUse": "Unknown",
+          "forensicTriage": "No",
+          "cwes": [
+            "CWE-841"
+          ],
+          "catalogVersion": "2026.09.25",
+          "dateReleased": "2026-09-25T18:58:16.502Z"
+        }
+      ]
+    },
+    "EpssScoreProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0003). Graph-layer properties of an EpssScore node (one FIRST EPSS daily CSV row), adhered to exactly one Vulnerability by HAS_EPSS; one node per CVE per scoreDate, never overwritten. A published datum: agents report it with scoreDate and modelVersion and never compute with it; it is not an input to confidence.",
+      "type": "object",
+      "required": [
+        "epssId",
+        "cveId",
+        "score",
+        "percentile",
+        "scoreDate",
+        "modelVersion"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "epssId": {
+          "type": "string",
+          "pattern": "^CVE-[0-9]{4}-[0-9]+::EPSS::[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "<cveId>::EPSS::<scoreDate>. Unique."
+        },
+        "cveId": {
+          "type": "string",
+          "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "CSV column epss, verbatim precision (5 decimals)."
+        },
+        "percentile": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "scoreDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Date part of the CSV header score_date (= the file date)."
+        },
+        "scoreTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "CSV header score_date, verbatim."
+        },
+        "modelVersion": {
+          "type": "string",
+          "description": "CSV header model_version, e.g. v2026.06.15. Scores from different model versions are not comparable."
+        }
+      },
+      "examples": [
+        {
+          "epssId": "CVE-1999-0001::EPSS::2026-09-27",
+          "cveId": "CVE-1999-0001",
+          "score": 0.03351,
+          "percentile": 0.88245,
+          "scoreDate": "2026-09-27",
+          "scoreTimestamp": "2026-09-27T12:00:21Z",
+          "modelVersion": "v2026.06.15"
+        }
+      ]
+    },
+    "SsvcDecisionProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0003). Graph-layer properties of an SsvcDecision node (one NVD metrics.ssvcV203[] entry by a declared ADP), adhered to exactly one Vulnerability by HAS_SSVC; one node per CVE per ADP timestamp.",
+      "type": "object",
+      "required": [
+        "ssvcId",
+        "cveId",
+        "version",
+        "timestamp",
+        "exploitation",
+        "automatable",
+        "technicalImpact",
+        "role",
+        "source",
+        "sourceRole"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ssvcId": {
+          "type": "string",
+          "description": "<cveId>::SSVC::<timestamp>, timestamp verbatim. Unique."
+        },
+        "cveId": {
+          "type": "string",
+          "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$",
+          "description": "ssvcData.id."
+        },
+        "version": {
+          "type": "string",
+          "enum": [
+            "2.0.3"
+          ],
+          "description": "ssvcData.version; the only value NVD publishes under ssvcV203."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ssvcData.timestamp, verbatim (two lexical forms occur in NVD)."
+        },
+        "exploitation": {
+          "type": "string",
+          "enum": [
+            "none",
+            "poc",
+            "active"
+          ]
+        },
+        "automatable": {
+          "type": "string",
+          "enum": [
+            "no",
+            "yes"
+          ]
+        },
+        "technicalImpact": {
+          "type": "string",
+          "enum": [
+            "partial",
+            "total"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "description": "ssvcData.role, verbatim (CISA Coordinator)."
+        },
+        "source": {
+          "type": "string",
+          "description": "NVD source identifier of the publisher, verbatim (CISA ADP: 134c704f-9b21-4f2e-91b3-4a467353bcc0)."
+        },
+        "sourceRole": {
+          "type": "string",
+          "enum": [
+            "adp"
+          ],
+          "description": "ADR-0002 role of source; v1.2 admits declared ADPs only."
+        }
+      },
+      "examples": [
+        {
+          "ssvcId": "CVE-2022-34821::SSVC::2025-04-18T15:23:16.425380Z",
+          "cveId": "CVE-2022-34821",
+          "version": "2.0.3",
+          "timestamp": "2025-04-18T15:23:16.425380Z",
+          "exploitation": "none",
+          "automatable": "no",
+          "technicalImpact": "total",
+          "role": "CISA Coordinator",
+          "source": "134c704f-9b21-4f2e-91b3-4a467353bcc0",
+          "sourceRole": "adp"
+        }
+      ]
     }
   },
   "examples": [

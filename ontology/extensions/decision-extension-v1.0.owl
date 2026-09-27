@@ -1,0 +1,312 @@
+@prefix decision: <http://www.motherhacker.me/kgcs/ontology/decision#> .
+@prefix kev:      <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:     <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:     <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix kgcs:     <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# Cross-cutting decision extension (ADR-0003,
+# docs/adr/ADR-0003-decision-extension.md). Three published,
+# dated decision inputs are ADHERED to kgcs:Vulnerability as leaf
+# nodes:
+#
+#   (v:Vulnerability)-[:HAS_KEV_ENTRY]->(:KevEntry)      CISA KEV catalog
+#   (v:Vulnerability)-[:HAS_EPSS]->(:EpssScore)          FIRST EPSS daily score
+#   (v:Vulnerability)-[:HAS_SSVC]->(:SsvcDecision)       CISA SSVC (NVD ssvcV203, ADP)
+#
+# Hard Rule 2: the three classes are enrichment of the CVE hop, not
+# hops of the causal chain. No property in this module, and no
+# property anywhere else, may connect them to Weakness,
+# AttackPattern, Technique or the defensive standards; the only
+# edge that may touch them is the has_* edge from a Vulnerability.
+# shapes/decision.shacl.ttl enforces this with closed node shapes
+# and incoming-edge guards. KEV `cwes` is stored as a string list
+# on the KevEntry and never becomes a CAUSED_BY edge.
+#
+# Probabilistic-semantics boundary (asset-extension-ontology-v1.0.md
+# section 2, applied here): EPSS is stored as the datum FIRST
+# published - a number, a percentile, a score date and a model
+# version - exactly as CVSS baseScore is stored. No class or
+# property in KGCS derives, combines or interprets it; nothing
+# in Core references it. One EpssScore per (CVE, score date),
+# never overwritten (append-only, like versioned CVSS scores).
+#
+# Namespaces (docs/namespace-policy-v1.2.md): one namespace per
+# publisher's standard - kev:, epss:, ssvc: - because Rule 5
+# forbids mixing source-specific identifiers across taxonomies.
+# The module IRI lives in decision: (ontology IRI and shape-graph
+# nodes only; it declares no term).
+#
+# No inverse properties are declared: an inverse would be an edge
+# leaving an adhered node, which the closed shapes forbid.
+#
+# Graph labels: KevEntry, EpssScore, SsvcDecision. Graph
+# properties are the camelCase forms named in each comment.
+#################################################################
+
+decision:DecisionExtensionOntology a owl:Ontology ;
+    rdfs:label "KGCS Decision Extension v1.0" ;
+    rdfs:comment "Dated, versioned, provenance-bearing decision inputs adhered to Vulnerability: CISA KEV catalog entries, FIRST EPSS daily scores and CISA SSVC decisions (NVD ssvcV203, CISA ADP). Leaf annotations of the CVE hop; never a hop of the causal chain and never connected to CWE, CAPEC, ATT&CK or the defensive standards. Extends core-ontology-v1.0 without modifying it." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+#################################################################
+# Classes
+#################################################################
+
+kev:KevEntry a owl:Class ;
+    rdfs:label "KEV Entry" ;
+    rdfs:comment "One entry of the CISA Known Exploited Vulnerabilities catalog (known_exploited_vulnerabilities.json, vulnerabilities[]). Exactly one per CVE; refreshed in place from the current catalog. Graph label: KevEntry." ;
+    owl:disjointWith kgcs:Vulnerability , kgcs:VulnerabilityScore , kgcs:Weakness , kgcs:AttackPattern , kgcs:Technique , epss:EpssScore , ssvc:SsvcDecision .
+
+epss:EpssScore a owl:Class ;
+    rdfs:label "EPSS Score" ;
+    rdfs:comment "One row of a FIRST EPSS daily CSV (cve, epss, percentile) together with the file header's model_version and score_date. One node per CVE per score date; never overwritten (append-only). Not a CVSS Score: disjoint with kgcs:VulnerabilityScore. Graph label: EpssScore." ;
+    owl:disjointWith kgcs:Vulnerability , kgcs:VulnerabilityScore , kgcs:Weakness , kgcs:AttackPattern , kgcs:Technique , ssvc:SsvcDecision .
+
+ssvc:SsvcDecision a owl:Class ;
+    rdfs:label "SSVC Decision" ;
+    rdfs:comment "One SSVC v2.0.3 decision point set published in NVD CVE JSON 2.0 metrics.ssvcV203[] by a declared Authorized Data Publisher (CISA ADP, 134c704f-9b21-4f2e-91b3-4a467353bcc0). One node per CVE per ADP timestamp; exact duplicate entries in the feed collapse to one. Graph label: SsvcDecision." ;
+    owl:disjointWith kgcs:Vulnerability , kgcs:VulnerabilityScore , kgcs:Weakness , kgcs:AttackPattern , kgcs:Technique .
+
+#################################################################
+# Object Properties (Vulnerability -> adhered node; no inverses)
+#################################################################
+
+kev:has_kev_entry a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range kev:KevEntry ;
+    rdfs:label "has KEV entry" ;
+    rdfs:comment "Vulnerability -> KevEntry, at most one per Vulnerability. Graph relationship: HAS_KEV_ENTRY. Enrichment of the CVE hop, not a hop of the causal chain." .
+
+epss:has_epss a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range epss:EpssScore ;
+    rdfs:label "has EPSS score" ;
+    rdfs:comment "Vulnerability -> EpssScore, one per score date loaded. Graph relationship: HAS_EPSS. Enrichment of the CVE hop, not a hop of the causal chain." .
+
+ssvc:has_ssvc a owl:ObjectProperty ;
+    rdfs:domain kgcs:Vulnerability ;
+    rdfs:range ssvc:SsvcDecision ;
+    rdfs:label "has SSVC decision" ;
+    rdfs:comment "Vulnerability -> SsvcDecision, one per ADP timestamp. Graph relationship: HAS_SSVC. Enrichment of the CVE hop, not a hop of the causal chain." .
+
+#################################################################
+# Datatype Properties - KEV (CISA known_exploited_vulnerabilities.json)
+#
+# Source fields verified against the CISA JSON schema
+# (known_exploited_vulnerabilities_schema.json) and the catalog
+# 2026.09.25 on 2026-09-27; mappings/kev-to-owl-v1.0.md.
+#################################################################
+
+kev:cve_id a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "cve id" ;
+    rdfs:comment "KEV `cveID`, verbatim (CISA pattern ^CVE-[0-9]{4}-[0-9]{4,19}$). Key of the KevEntry: exactly one entry per CVE. Graph property: cveId (unique on the KevEntry label)." .
+
+kev:vendor_project a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "vendor project" ;
+    rdfs:comment "KEV `vendorProject`, verbatim. Graph property: vendorProject." .
+
+kev:product a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "product" ;
+    rdfs:comment "KEV `product`, verbatim. Graph property: product." .
+
+kev:vulnerability_name a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "vulnerability name" ;
+    rdfs:comment "KEV `vulnerabilityName`, verbatim. Graph property: vulnerabilityName." .
+
+kev:date_added a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:date ;
+    rdfs:label "date added" ;
+    rdfs:comment "KEV `dateAdded` (YYYY-MM-DD): the date the CVE entered the catalog. Graph property: dateAdded (string, ISO date)." .
+
+kev:short_description a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "short description" ;
+    rdfs:comment "KEV `shortDescription`, verbatim. Graph property: shortDescription." .
+
+kev:required_action a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "required action" ;
+    rdfs:comment "KEV `requiredAction`, verbatim (e.g. Apply vendor mitigations per BOD 26-04 guidance). Graph property: requiredAction." .
+
+kev:due_date a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:date ;
+    rdfs:label "due date" ;
+    rdfs:comment "KEV `dueDate` (YYYY-MM-DD): the date the required action is due. Graph property: dueDate (string, ISO date)." .
+
+kev:known_ransomware_campaign_use a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "known ransomware campaign use" ;
+    rdfs:comment "KEV `knownRansomwareCampaignUse`: Known or Unknown (CISA schema; optional there, present on every current entry). Graph property: knownRansomwareCampaignUse." .
+
+kev:forensic_triage a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "forensic triage" ;
+    rdfs:comment "KEV `forensicTriage`: Yes or No - whether BOD 26-04 requires forensic triage (field added by CISA in 2026; optional in the schema). Graph property: forensicTriage." .
+
+kev:notes a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "notes" ;
+    rdfs:comment "KEV `notes`, verbatim (semicolon-separated URLs in current entries; not parsed). Graph property: notes." .
+
+kev:cwes a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "cwes" ;
+    rdfs:comment "KEV `cwes[]`, one value per CWE identifier, verbatim (CISA pattern ^CWE-([0-9])+$). Stored as strings on the entry only: it never becomes a CAUSED_BY edge or any other edge to a Weakness (ADR-0003). Graph property: cwes (string list)." .
+
+kev:catalog_version a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:string ;
+    rdfs:label "catalog version" ;
+    rdfs:comment "Top-level `catalogVersion` of the catalog file the entry was loaded from (e.g. 2026.09.25). Provenance of the refresh; also the build-metadata snapshot value KEV=<catalogVersion>. Graph property: catalogVersion." .
+
+kev:date_released a owl:DatatypeProperty ;
+    rdfs:domain kev:KevEntry ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "date released" ;
+    rdfs:comment "Top-level `dateReleased` of the catalog file the entry was loaded from (YYYY-MM-DDTHH:mm:ss.sssZ). Graph property: dateReleased." .
+
+#################################################################
+# Datatype Properties - EPSS (FIRST daily CSV)
+#
+# Source: epss_scores-<YYYY-MM-DD>.csv.gz / epss_scores-current.csv.gz;
+# line 1 `#model_version:<v>,score_date:<timestamp>`, line 2
+# `cve,epss,percentile`. Verified on the 2026-09-27 file
+# (model v2026.06.15, 380,066 rows); mappings/epss-to-owl-v1.0.md.
+#################################################################
+
+epss:epss_id a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:string ;
+    rdfs:label "epss id" ;
+    rdfs:comment "Synthetic deterministic key <cveId>::EPSS::<scoreDate> (scoreDate = YYYY-MM-DD). One EpssScore per CVE per score date. Graph property: epssId (unique)." .
+
+epss:cve_id a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:string ;
+    rdfs:label "cve id" ;
+    rdfs:comment "CSV column `cve`, verbatim. Graph property: cveId (join key; not unique on this label)." .
+
+epss:score a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "score" ;
+    rdfs:comment "CSV column `epss`: the probability of exploitation activity in the next 30 days as published by FIRST, in [0, 1], verbatim precision (5 decimals in the CSV, 9 in the API). Stored as a published datum; KGCS derives nothing from it. Graph property: score." .
+
+epss:percentile a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "percentile" ;
+    rdfs:comment "CSV column `percentile`: the proportion of all scored CVEs with a score at or below this one, in [0, 1]. Graph property: percentile." .
+
+epss:score_date a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:date ;
+    rdfs:label "score date" ;
+    rdfs:comment "Date part of the header `score_date` (equal to the date in the file name). Part of the key. Graph property: scoreDate (string, ISO date)." .
+
+epss:score_timestamp a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "score timestamp" ;
+    rdfs:comment "Header `score_date`, verbatim (e.g. 2026-09-27T12:00:21Z). Graph property: scoreTimestamp." .
+
+epss:model_version a owl:DatatypeProperty ;
+    rdfs:domain epss:EpssScore ;
+    rdfs:range xsd:string ;
+    rdfs:label "model version" ;
+    rdfs:comment "Header `model_version`, verbatim (v2022.01.01, v2023.03.01, v2025.03.14, v2026.06.15 ...). Scores from different model versions are not comparable; the version travels with every node. Graph property: modelVersion." .
+
+#################################################################
+# Datatype Properties - SSVC (NVD CVE JSON 2.0 metrics.ssvcV203[])
+#
+# Entry shape verified on the raw NVD per-year files (2024: 38,130
+# entries; 2026: 47,324; 2026-09-27):
+#   { source, ssvcData: { timestamp, id, options: [ {exploitation},
+#     {automatable}, {technicalImpact} ], role, version } }
+# There is no `type` field (unlike cvssMetric*). CNA-role entries
+# carry no timestamp and no id and are out of scope (ADR-0003).
+# mappings/ssvc-to-owl-v1.0.md.
+#################################################################
+
+ssvc:ssvc_id a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "ssvc id" ;
+    rdfs:comment "Synthetic deterministic key <cveId>::SSVC::<timestamp> with the raw `ssvcData.timestamp` string verbatim (never normalised). One SsvcDecision per CVE per ADP timestamp. Graph property: ssvcId (unique)." .
+
+ssvc:cve_id a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "cve id" ;
+    rdfs:comment "`ssvcData.id`, verbatim (always the owning CVE on ADP entries). Graph property: cveId (join key; not unique on this label)." .
+
+ssvc:version a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "version" ;
+    rdfs:comment "`ssvcData.version`, verbatim; 2.0.3 is the only value NVD publishes under the ssvcV203 key. A new SSVC version is a new NVD metrics key and a spec change. Graph property: version." .
+
+ssvc:timestamp a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "timestamp" ;
+    rdfs:comment "`ssvcData.timestamp`: the instant the ADP published the decision (two lexical forms occur in NVD: 2025-04-18T15:23:16.425380Z and 2024-09-12T17:22:46+00:00; both valid xsd:dateTime). Part of the key. Graph property: timestamp (string, verbatim)." .
+
+ssvc:exploitation a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "exploitation" ;
+    rdfs:comment "`options[].exploitation`: none | poc | active (SSVC v2 Exploitation decision point). Graph property: exploitation." .
+
+ssvc:automatable a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "automatable" ;
+    rdfs:comment "`options[].automatable`: no | yes (SSVC v2 Automatable decision point). Graph property: automatable." .
+
+ssvc:technical_impact a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "technical impact" ;
+    rdfs:comment "`options[].technicalImpact`: partial | total (SSVC v2 Technical Impact decision point). Graph property: technicalImpact." .
+
+ssvc:role a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "role" ;
+    rdfs:comment "`ssvcData.role`, verbatim (CISA Coordinator on ADP entries). Graph property: role." .
+
+ssvc:source a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "source" ;
+    rdfs:comment "`ssvcV203[].source`, verbatim: the NVD source identifier of the publisher (CISA ADP: 134c704f-9b21-4f2e-91b3-4a467353bcc0). Graph property: source." .
+
+ssvc:source_role a owl:DatatypeProperty ;
+    rdfs:domain ssvc:SsvcDecision ;
+    rdfs:range xsd:string ;
+    rdfs:label "source role" ;
+    rdfs:comment "Role of `source` under the ADR-0002 rule (nvd | cna | adp, declared ADP list in mappings/cve-to-owl-v1.0.md). v1.0 of this module admits only adp: CNA-role SSVC entries (no timestamp, no id) are dropped and counted by the loader. Graph property: sourceRole." .

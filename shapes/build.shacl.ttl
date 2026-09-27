@@ -1,4 +1,4 @@
-# KGCS Build Metadata SHACL Shapes v1.1
+# KGCS Build Metadata SHACL Shapes v1.2
 #
 # Validates the BuildMetadata node against the build-metadata module
 # (ontology/extensions/build-metadata-v1.0.owl).
@@ -18,8 +18,16 @@
 # version, not the ATT&CK release; never use it. The current raw bundles are
 # STIX 2.0 without x-mitre-collection, so today the value is
 #   ATTCK=download:2026-09-06;modified-max:2026-08-04
-# Per-domain keys (ATTCK-ENTERPRISE=..., ...) are a v1.2 candidate, not
+# Per-domain keys (ATTCK-ENTERPRISE=..., ...) remain a candidate, not
 # implemented.
+#
+# v1.2: the decision extension (ADR-0003) adds two sources to the SOURCE
+# vocabulary: KEV (value = the catalog's catalogVersion, e.g. KEV=2026.09.25)
+# and EPSS (value = score date and model version, e.g.
+# EPSS=2026-09-27;model:v2026.06.15). SSVC needs no key: it is read from the
+# NVD CVE files and is covered by the CVE snapshot. The frozen OWL comment
+# on build:source_snapshot lists the ten v1.0 sources; the pattern below is
+# the normative vocabulary.
 #
 # Enforcement level: STRICT (reject at ingest)
 #
@@ -74,8 +82,8 @@ build:BuildMetadataShape
         sh:path build:source_snapshot ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
-        sh:pattern "^(CPE|CVE|CVSS|CWE|CAPEC|ATTCK|D3FEND|CAR|SHIELD|ENGAGE)=.+$" ;
-        sh:message "BuildMetadata.sourceSnapshots values must be <SOURCE>=<snapshot> with SOURCE one of the ten KGCS standards." ;
+        sh:pattern "^(CPE|CVE|CVSS|CWE|CAPEC|ATTCK|D3FEND|CAR|SHIELD|ENGAGE|KEV|EPSS)=.+$" ;
+        sh:message "BuildMetadata.sourceSnapshots values must be <SOURCE>=<snapshot> with SOURCE one of the ten KGCS standards or KEV / EPSS (v1.2)." ;
         sh:severity sh:Violation ;
     ] ;
 

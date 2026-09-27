@@ -1,0 +1,11 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl SsvcDecisionAdherenceShape: a Weakness pointing at an
+# SsvcDecision via DEMONSTRATED_BY (also fails SH-CORE-04 on the Weakness).
+fx:cwe-79 kgcs:exploited_by fx:ssvc-1 .

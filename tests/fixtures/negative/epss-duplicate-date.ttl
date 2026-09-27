@@ -1,0 +1,18 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl EpssScoreShape: a second EpssScore for CVE-2024-0001 on the same
+# score date - one per CVE per date, never overwritten (both nodes are reported).
+fx:cve-1 epss:has_epss fx:epss-dup .
+fx:epss-dup a epss:EpssScore ;
+    epss:epss_id "CVE-2024-0001::EPSS::2026-09-27" ;
+    epss:cve_id "CVE-2024-0001" ;
+    epss:score "0.04000"^^xsd:decimal ;
+    epss:percentile "0.90000"^^xsd:decimal ;
+    epss:score_date "2026-09-27"^^xsd:date ;
+    epss:model_version "v2026.06.15" .

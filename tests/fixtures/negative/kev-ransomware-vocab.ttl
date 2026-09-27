@@ -1,0 +1,29 @@
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix cve:    <http://www.motherhacker.me/kgcs/ontology/cve#> .
+@prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
+@prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
+@prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# decision.shacl KevEntryShape: knownRansomwareCampaignUse outside {Known, Unknown}.
+# A second Vulnerability with no CAUSED_BY (so no provenance Warning).
+fx:cve-2 a kgcs:Vulnerability ;
+    cve:cveId "CVE-2024-0002" ;
+    cve:published "2024-04-01T08:00:00Z"^^xsd:dateTime ;
+    cve:source "nvd@nist.gov" .
+
+fx:cve-2 kev:has_kev_entry fx:kev-2 .
+fx:kev-2 a kev:KevEntry ;
+    kev:cve_id "CVE-2024-0002" ;
+    kev:vendor_project "Vendor" ;
+    kev:product "Other" ;
+    kev:vulnerability_name "Vendor Other Code Injection Vulnerability" ;
+    kev:date_added "2024-05-01"^^xsd:date ;
+    kev:short_description "Vendor Other contains a code injection vulnerability." ;
+    kev:required_action "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable." ;
+    kev:due_date "2024-05-22"^^xsd:date ;
+    kev:known_ransomware_campaign_use "Maybe" ;
+    kev:forensic_triage "No" ;
+    kev:cwes "CWE-94" ;
+    kev:catalog_version "2026.09.25" .

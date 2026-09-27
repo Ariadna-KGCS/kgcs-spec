@@ -277,5 +277,217 @@
         "severity": "sh:Violation"
       }
     ]
+  },
+  "kev-missing-due-date.ttl": {
+    "description": "decision.shacl KevEntryShape: dueDate missing (required by the CISA KEV schema)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:kev-2",
+        "path": "kev#due_date",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "kev-ransomware-vocab.ttl": {
+    "description": "decision.shacl KevEntryShape: knownRansomwareCampaignUse outside {Known, Unknown}",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:kev-2",
+        "path": "kev#known_ransomware_campaign_use",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "kev-edge-to-weakness.ttl": {
+    "description": "decision.shacl KevEntryShape (closed): KevEntry -> Weakness edge; KEV cwes stay strings, never CAUSED_BY (ADR-0003)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:kev-1",
+        "path": "core#caused_by",
+        "constraint": "sh:ClosedConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "kev-duplicate-entry.ttl": {
+    "description": "decision.shacl: second KevEntry for the same CVE - one per CVE (SPARQL on both) and HAS_KEV_ENTRY maxCount 1 on the Vulnerability",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "kev#has_kev_entry",
+        "constraint": "sh:MaxCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:kev-1",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:kev-dup",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "kev-incoming-from-weakness.ttl": {
+    "description": "decision.shacl KevEntryAdherenceShape: HAS_KEV_ENTRY from a Weakness (only a Vulnerability may adhere a decision node)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:kev-1",
+        "path": "kev#has_kev_entry",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "epss-score-out-of-range.ttl": {
+    "description": "decision.shacl EpssScoreShape: score above 1",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:epss-2",
+        "path": "epss#score",
+        "constraint": "sh:MaxInclusiveConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "epss-duplicate-date.ttl": {
+    "description": "decision.shacl EpssScoreShape: second EpssScore for the same CVE and score date - never overwritten, one per date (both nodes reported)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:epss-1",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:epss-dup",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "epss-cve-mismatch.ttl": {
+    "description": "decision.shacl EpssScoreShape: EpssScore adhered to a Vulnerability whose cveId differs from the score's cve",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:epss-1",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "epss-incoming-from-technique.ttl": {
+    "description": "decision.shacl EpssScoreAdherenceShape: Technique -[MITIGATED_BY]-> EpssScore (no edge from the chain into a decision node)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:epss-1",
+        "path": "core#mitigated_by",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "ssvc-exploitation-vocab.ttl": {
+    "description": "decision.shacl SsvcDecisionShape: exploitation outside {none, poc, active}",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ssvc-2",
+        "path": "ssvc#exploitation",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "ssvc-version-unsupported.ttl": {
+    "description": "decision.shacl SsvcDecisionShape: SSVC version other than 2.0.3 (the only version NVD publishes under ssvcV203)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ssvc-2",
+        "path": "ssvc#version",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "ssvc-source-role-cna.ttl": {
+    "description": "decision.shacl SsvcDecisionShape: CNA-role SSVC entry loaded as a decision - v1.0 admits declared ADPs only (sourceRole adp)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ssvc-2",
+        "path": "ssvc#source_role",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "ssvc-edge-to-technique.ttl": {
+    "description": "decision.shacl SsvcDecisionShape (closed): SsvcDecision -> Technique edge (no shortcut from a decision node into the chain)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ssvc-1",
+        "path": "core#implemented_as",
+        "constraint": "sh:ClosedConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "ssvc-duplicate-timestamp.ttl": {
+    "description": "decision.shacl SsvcDecisionShape: second SsvcDecision for the same CVE and ADP timestamp (both nodes reported)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:ssvc-1",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:ssvc-dup",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "ssvc-incoming-from-weakness.ttl": {
+    "description": "decision.shacl SsvcDecisionAdherenceShape + SH-CORE-04: Weakness -[DEMONSTRATED_BY]-> SsvcDecision",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cwe-79",
+        "path": "core#exploited_by",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:ssvc-1",
+        "path": "core#exploited_by",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "vuln-has-epss-wrong-class.ttl": {
+    "description": "decision.shacl VulnerabilityDecisionEdgesShape: HAS_EPSS targeting a KevEntry (sh:class) - the KevEntry also reports the foreign incoming edge",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:cve-1",
+        "path": "epss#has_epss",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:kev-1",
+        "path": "epss#has_epss",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
   }
 }

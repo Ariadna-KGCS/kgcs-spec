@@ -25,7 +25,10 @@ All mappings preserve source identifiers, timestamps, and relationships. The cor
 - [car-to-owl-v1.0.md](car-to-owl-v1.0.md)
 - [engage-to-owl-v1.0.md](engage-to-owl-v1.0.md)
 - [shield-to-owl-v1.0.md](shield-to-owl-v1.0.md)
-- [mapping-coverage-matrix-v1.0.md](mapping-coverage-matrix-v1.0.md)
+- [kev-to-owl-v1.0.md](kev-to-owl-v1.0.md) (v1.2, decision extension)
+- [epss-to-owl-v1.0.md](epss-to-owl-v1.0.md) (v1.2, decision extension)
+- [ssvc-to-owl-v1.0.md](ssvc-to-owl-v1.0.md) (v1.2, decision extension)
+- [mapping-coverage-matrix-v1.0.md](mapping-coverage-matrix-v1.0.md) (frozen) · [mapping-coverage-matrix-v1.1.md](mapping-coverage-matrix-v1.1.md) (frozen) · [mapping-coverage-matrix-v1.2.md](mapping-coverage-matrix-v1.2.md) (current)
 
 ---
 
@@ -42,6 +45,7 @@ All mappings preserve source identifiers, timestamps, and relationships. The cor
 | D3FEND | `d3fend-to-owl-v1.0.md` | `ontology/standards/d3fend-ontology-v1.0.owl` | ✅ Complete | 4 classes, 16 object properties, 10 datatype properties (350 lines); passthrough architecture |
 | CAR | `car-to-owl-v1.0.md` | `ontology/standards/car-ontology-v1.0.owl` | ✅ Complete | 7 classes, 16 object properties, 23 datatype properties (352 lines); three-entity federation |
 | ENGAGE | `engage-to-owl-v1.0.md` | `ontology/standards/engage-ontology-v1.0.owl` | ✅ Complete | 4 entity types (Activity, Approach, Goal, Reference), hierarchical goal-approach-activity federation with EAV exploitation semantics; 5 classes, 12 object properties, 10 datatype properties (272 lines) |
+| KEV / EPSS / SSVC (v1.2) | `kev-to-owl-v1.0.md`, `epss-to-owl-v1.0.md`, `ssvc-to-owl-v1.0.md` | `ontology/extensions/decision-extension-v1.0.owl` | ✅ Mapping complete; loaders pending (Q18) | 3 classes, 3 object properties, 32 datatype properties; leaf nodes adhered to Vulnerability (ADR-0003) |
 | SHIELD | `shield-to-owl-v1.0.md` | `ontology/standards/shield-ontology-v1.0.owl` | ✅ Mapping Complete | 6 entity types (Tactic, Technique, Opportunity, UseCase, Procedure, ATT&CK Mapping), hierarchical tactic-technique-opportunity-usecase federation with critical Opportunity→UseCase minimum cardinality (1); 11 object properties, 9 datatype properties (494 lines) |
 
 ---

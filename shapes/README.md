@@ -18,7 +18,8 @@ This folder contains SHACL shape files that validate the KGCS OWL ontology (sche
 | `car.shacl.ttl` | DetectionAnalytic (analyticId pattern CAR-####-##-###, title) |
 | `shield.shacl.ttl` | DeceptionTechnique (techniqueId DTE####, name) |
 | `engage.shacl.ttl` | EngagementConcept (at least one of: activityId EAC/SAC, approachId EAP/SAP, goalId EGO/SGO — all patterned) |
-| `build.shacl.ttl` (v1.1) | BuildMetadata (specVersion semver, buildTimestamp, pipelineCommit hex, sourceSnapshots `<SOURCE>=<snapshot>`; v1.1 at most one value per SOURCE) |
+| `build.shacl.ttl` (v1.2) | BuildMetadata (specVersion semver, buildTimestamp, pipelineCommit hex, sourceSnapshots `<SOURCE>=<snapshot>`; v1.1 at most one value per SOURCE; v1.2 SOURCE vocabulary gains `KEV` and `EPSS`) |
+| `decision.shacl.ttl` (v1.0) | Decision extension (ADR-0003): `KevEntry`, `EpssScore`, `SsvcDecision` — closed node shapes (no edge may leave a decision node), field validation with the CISA / FIRST / SSVC vocabularies, one node per CVE (KEV) / per (CVE, scoreDate) (EPSS) / per (CVE, timestamp) (SSVC) and cveId agreement with the adhering Vulnerability (SHACL-SPARQL); `*AdherenceShape`s reject any incoming edge other than the has_* edge from a Vulnerability; `decision:VulnerabilityDecisionEdgesShape` checks edge targets and `HAS_KEV_ENTRY` maxCount 1 |
 
 ## Key Invariants (core.shacl.ttl)
 
@@ -38,6 +39,21 @@ kgcs-pipeline loader change in session Q5 fixes this.** With the graph
 vocabulary for `domains`, this is the only v1.1 ATT&CK shape kgcs-demo
 fails (verified by Cypher on 2026-09-26: 0 nodes with a missing or
 out-of-vocabulary `domains`, 0 of 540 `SUBTECHNIQUE_OF` edges cross-domain).
+
+## Decision leaves and `sh:closed` (v1.2)
+
+`decision.shacl.ttl` is the first shape file to use `sh:closed`. The harness
+closure (`INFERENCE_MODE = "alignment-owlrl"`) asserts a reflexive
+`owl:sameAs` on every node, so the closed shapes list `rdf:type` and
+`owl:sameAs` in `sh:ignoredProperties`; a consumer validating an RDF export
+without that closure needs no change. The incoming-edge guards
+(`kev:KevEntryAdherenceShape` etc.) are SHACL-SPARQL over `?s ?p $this`,
+excluding `owl:sameAs` for the same reason. Together they make Hard Rule 2
+checkable for the decision layer: a `KevEntry → Weakness` edge fails
+`sh:closed`, a `Weakness → SsvcDecision` edge fails the adherence guard (and
+SH-CORE-04), and a `Vulnerability -[HAS_EPSS]-> KevEntry` edge fails both
+`sh:class` and the guard. KEV `cwes` are strings on the entry and never
+edges (ADR-0003).
 
 ## SHACL-SPARQL severity
 
