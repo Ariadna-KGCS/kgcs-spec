@@ -216,7 +216,7 @@ fx:ta0005 a kgcs:Tactic ;
     attack:phaseName "defense-evasion" ;
     attack:domain "enterprise" .
 
-# --- ATLAS (atlas-ontology-v1.0.owl, ADR-0004) -------------------------------
+# --- ATLAS (atlas-ontology-v1.1.owl, ADR-0004) -------------------------------
 # A parallel matrix beside ATT&CK: nothing in the chain points at these nodes
 # and they point at nothing in the chain except through ADAPTED_FROM. Values
 # are verbatim from ATLAS release 2026.09 (dist/v6/ATLAS-2026.09.yaml),
@@ -238,7 +238,7 @@ fx:aml-t0091 a atlas:AtlasTechnique ;
     atlas:modifiedDate "2026-05-27"^^xsd:date ;
     atlas:maturity "Realized" ;
     atlas:platforms "Enterprise" ;
-    atlas:part_of fx:aml-ta0015 ;
+    atlas:achieves fx:aml-ta0015 ;
     atlas:adapted_from fx:t1550 .
 
 fx:aml-t0091-000 a atlas:AtlasSubTechnique ;
@@ -249,8 +249,8 @@ fx:aml-t0091-000 a atlas:AtlasSubTechnique ;
     atlas:modifiedDate "2026-05-27"^^xsd:date ;
     atlas:maturity "Realized" ;
     atlas:platforms "Enterprise" ;
-    atlas:subtechnique_of fx:aml-t0091 ;
-    atlas:part_of fx:aml-ta0015 ;
+    atlas:specializes fx:aml-t0091 ;
+    atlas:achieves fx:aml-ta0015 ;
     atlas:adapted_from fx:t1550-001 .
 
 fx:aml-m0019 a atlas:AtlasMitigation ;

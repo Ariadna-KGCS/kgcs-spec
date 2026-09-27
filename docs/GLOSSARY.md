@@ -211,6 +211,11 @@ node attaches to one.
 - **AtlasTactic** (`AML.TA####`), **AtlasTechnique** (`AML.T####`),
   **AtlasSubTechnique** (`AML.T####.###`), **AtlasMitigation**
   (`AML.M####`). Key `atlasId`; `name` is not unique.
+- **ACHIEVES** — an ATLAS technique or sub-technique achieves an ATLAS
+  tactic (source relationship `achieves`). **SPECIALIZES** — an ATLAS
+  sub-technique specializes its parent ATLAS technique (source relationship
+  `specializes`). Both are ATLAS-only relationship types (spec v1.2.1): the
+  ATT&CK `PART_OF` and `SUBTECHNIQUE_OF` never touch an ATLAS node.
 - **Maturity** — ATLAS's evidence level for a technique: Feasible,
   Demonstrated or Realized. Stored verbatim, never scored.
 - **ADAPTED_FROM** — an ATLAS technique that MITRE declares adapted from an

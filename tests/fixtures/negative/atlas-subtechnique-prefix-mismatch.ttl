@@ -15,5 +15,5 @@ fx:aml-neg a atlas:AtlasSubTechnique ;
     atlas:modifiedDate "2026-05-27"^^xsd:date ;
     atlas:maturity "Realized" ;
     atlas:platforms "Enterprise" ;
-    atlas:part_of fx:aml-ta0015 ;
-    atlas:subtechnique_of fx:aml-t0091 .
+    atlas:achieves fx:aml-ta0015 ;
+    atlas:specializes fx:aml-t0091 .

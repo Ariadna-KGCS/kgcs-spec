@@ -200,7 +200,23 @@ vocabulary or to undeclared `attack:` terms are marked accordingly.
 | `description`, `created`, `modified`, `lang`, `labels` | yes/no | `dct:description`, `dct:created`, `dct:modified`, `dct:language`, `dct:subject` | external | not KGCS terms; unconstrained by shapes |
 | `x_mitre_data_sources`, `x_mitre_data_components`, `x_mitre_detection`, `granular_markings`, `extensions` | no | `attack:dataSource`, `attack:dataComponent`, `attack:detection`, `attack:granularMarkings`, `attack:extensions` | planned | cited by v1.0 rows, declared by no OWL module (classes `attack:DataSource` / `attack:DataComponent` exist; the properties do not) |
 
-## ATLAS (`atlas-ontology-v1.0.owl`, v1.2, ADR-0004) *(v1.2)*
+## ATLAS (`atlas-ontology-v1.1.owl`, v1.2.1, ADR-0004) *(v1.2)*
+
+**Module versions.** `atlas-ontology-v1.0.owl` (spec v1.2.0) is
+**deprecated** as of spec v1.2.1 (2026-09-27) and superseded by
+`atlas-ontology-v1.1.owl`. v1.0 is sealed by tag `v1.2.0` (Hard Rule 1) and
+stays in the repo unmodified; its `atlas:part_of` and `atlas:subtechnique_of`
+are marked `owl:deprecated` in v1.1 and are used by no shape, contract or
+loader. v1.1 renames the two ATLAS-internal edges to the source's own names,
+`atlas:achieves` (graph `ACHIEVES`) and `atlas:specializes` (graph
+`SPECIALIZES`), so that no unqualified ATT&CK `PART_OF` / `SUBTECHNIQUE_OF`
+count or export can include an ATLAS edge (ADR-0004 open question 1). All
+other terms are unchanged.
+
+| Module | Spec release | Status |
+| --- | --- | --- |
+| `ontology/standards/atlas-ontology-v1.0.owl` | v1.2.0 | deprecated (sealed; superseded by v1.1) |
+| `ontology/standards/atlas-ontology-v1.1.owl` | v1.2.1 | current |
 
 MITRE ATLAS as a parallel matrix beside ATT&CK, outside the causal chain;
 the only cross-standard edge is `ADAPTED_FROM` (ATLAS → ATT&CK technique).
@@ -222,8 +238,8 @@ and source profile in `atlas-to-owl-v1.0.md`. Loader: `load_atlas.py`
 | `platforms[]` | yes (techniques) | `atlas:platforms` | planned (loader) | `Enterprise` \| `Predictive AI` \| `Generative AI` \| `Agentic AI` |
 | `categories[]`, `lifecycle-phases[]` | yes (mitigations) | `atlas:categories`, `atlas:lifecyclePhases` | planned (loader) | closed vocabularies (3 / 6 values) |
 | relationship `sequences.position` | yes | `atlas:matrixPosition` | planned (loader) | on `AtlasTactic`, 1–16; no matrix node |
-| relationship `achieves` | yes | `atlas:part_of` | planned (loader) | graph `PART_OF`, ATLAS-scoped by label; 225 (131 techniques + 94 sub-techniques) |
-| relationship `specializes` | yes (sub-techniques) | `atlas:subtechnique_of` | planned (loader) | graph `SUBTECHNIQUE_OF`, ATLAS-scoped; 88; parent id = id prefix |
+| relationship `achieves` | yes | `atlas:achieves` *(v1.2.1)* | planned (loader) | graph `ACHIEVES` (ATLAS-only type; never the ATT&CK `PART_OF`); 225 (131 techniques + 94 sub-techniques) |
+| relationship `specializes` | yes (sub-techniques) | `atlas:specializes` *(v1.2.1)* | planned (loader) | graph `SPECIALIZES` (ATLAS-only type; never the ATT&CK `SUBTECHNIQUE_OF`); 88; parent id = id prefix |
 | relationship `mitigates` | yes | `atlas:mitigates` | planned (loader) | graph `MITIGATES` (mitigation → technique); 361 |
 | `attack-reference` on techniques / sub-techniques | no (44 of 208) | `atlas:adapted_from`, `atlas:AdaptedFromStatement`, `atlas:sourceField`, `atlas:attackReferenceId`, `atlas:attackReferenceUrl` | planned (loader) | graph `ADAPTED_FROM {sourceField, attackReferenceId, attackReferenceUrl}` → `Technique` / `SubTechnique`; v1.1 bridge rule (revoked remap, deprecated / unresolved dropped and counted); 43 of 44 resolve on `kgcs-v11` (`T1656` absent) |
 | `attack-reference` on tactics / mitigations | no (14 / 4) | none | excluded | see Exclusions |
@@ -371,5 +387,5 @@ it).
 8. `CAUSED_BY` count unchanged on the same raw data (331,107), and `size(sources) = size(sourceRoles) = size(types)` on every edge.
 9. Per-bridge counts (remapped / dropped deprecated / unresolved) reported by the loader and recorded with the snapshot.
 10. *(v1.2)* After `load_kev.py` / `load_epss.py` / `load_ssvc.py`: every decision node has exactly one incoming edge and it is the has_\* edge from the Vulnerability with the same `cveId`; no edge leaves a decision node (`shapes/decision.shacl.ttl` on export, or the Cypher equivalents in the three mapping docs); `count(EpssScore)` never decreases; dropped-and-counted totals per source recorded with the snapshot.
-11. *(v1.2)* After `load_atlas.py`: node and edge counts equal the source profile of the pinned release (2026.09: 16 / 120 / 88 / 40 nodes, 225 ATLAS `PART_OF`, 88 ATLAS `SUBTECHNIQUE_OF`, 361 `MITIGATES`, `ADAPTED_FROM` = 44 − unresolved); zero edges between an ATLAS node and a non-ATLAS node other than outgoing `ADAPTED_FROM`; every `ADAPTED_FROM` carries `sourceField` / `attackReferenceId` / `attackReferenceUrl`; the **label-qualified** ATT&CK `PART_OF` and `SUBTECHNIQUE_OF` counts are unchanged (unqualified counts grow by 225 / 88). Cypher in `atlas-to-owl-v1.0.md`.
+11. *(v1.2)* After `load_atlas.py`: node and edge counts equal the source profile of the pinned release (2026.09: 16 / 120 / 88 / 40 nodes, 225 `ACHIEVES`, 88 `SPECIALIZES`, 361 `MITIGATES`, `ADAPTED_FROM` = 44 − unresolved); zero edges between an ATLAS node and a non-ATLAS node other than outgoing `ADAPTED_FROM`; every `ADAPTED_FROM` carries `sourceField` / `attackReferenceId` / `attackReferenceUrl`; no `Atlas*` node carries a `PART_OF` or `SUBTECHNIQUE_OF`, and the ATT&CK `PART_OF` and `SUBTECHNIQUE_OF` counts, qualified or not, are unchanged (v1.2.1). Cypher in `atlas-to-owl-v1.0.md`.
 11. *(v1.2)* **Chain equivalence:** every chain export (nodes and edges of `CPE → CVE/CVSS → CWE → CAPEC → ATT&CK → defences`, `CAUSED_BY` with provenance, `BuildMetadata` minus the two new keys) is hash-identical between `kgcs-v11` and `kgcs-v12` on the same raw data (session Q19 gate). The decision extension adds nodes and edges; it must change nothing else.

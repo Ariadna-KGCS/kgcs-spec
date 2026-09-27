@@ -1,9 +1,9 @@
 # ADR-0004 — ATLAS module: a parallel matrix beside ATT&CK, bridged only by ADAPTED_FROM
 
-**Status:** Accepted (2026-09-27, HC)
+**Status:** Accepted (2026-09-27, HC); amended 2026-09-27 for spec v1.2.1 (open question 1: ATLAS-native edge names)
 **Scope:** modelling of MITRE ATLAS (Adversarial Threat Landscape for AI Systems) tactics, techniques, sub-techniques and mitigations in the KGCS graph, and of the one relation ATLAS declares towards ATT&CK
 **Deciders:** Humbert Costas
-**Spec artifacts:** `ontology/standards/atlas-ontology-v1.0.owl`, `shapes/atlas.shacl.ttl`, `shapes/build.shacl.ttl` v1.2 (`ATLAS` key), `mappings/atlas-to-owl-v1.0.md`, `mappings/mapping-coverage-matrix-v1.2.md`, `docs/namespace-policy-v1.2.md`, `contracts/agent-consumable-schema.md` (invariant 10), `contracts/agent-consumable-schema.json` (`definitions.AtlasTacticProperties`, `AtlasTechniqueProperties`, `AtlasMitigationProperties`, `AdaptedFromEdgeProperties`)
+**Spec artifacts:** `ontology/standards/atlas-ontology-v1.1.owl` (v1.2.1; supersedes the sealed, deprecated `atlas-ontology-v1.0.owl` of v1.2.0), `shapes/atlas.shacl.ttl` v1.1, `shapes/build.shacl.ttl` v1.2 (`ATLAS` key), `mappings/atlas-to-owl-v1.0.md`, `mappings/mapping-coverage-matrix-v1.2.md`, `docs/namespace-policy-v1.2.md`, `contracts/agent-consumable-schema.md` (invariant 10), `contracts/agent-consumable-schema.json` (`definitions.AtlasTacticProperties`, `AtlasTechniqueProperties`, `AtlasMitigationProperties`, `AdaptedFromEdgeProperties`)
 
 ## Context
 
@@ -62,7 +62,7 @@ Rules of this repo that constrain the design:
 
 ### D1 — Parallel matrix in its own namespace, four labels
 
-A new standard-scoped module `ontology/standards/atlas-ontology-v1.0.owl`
+A new standard-scoped module `ontology/standards/atlas-ontology-v1.0.owl` (v1.1 since spec v1.2.1)
 in a new namespace `atlas:` (`http://www.motherhacker.me/kgcs/ontology/atlas#`,
 registered in `docs/namespace-policy-v1.2.md`):
 
@@ -86,26 +86,33 @@ as in the ATT&CK module (`atlasId`, `name`, `description`, `maturity`,
 `platforms`, `createdDate`, `modifiedDate`, `matrixPosition`, `categories`,
 `lifecyclePhases`).
 
-### D2 — Edges inside ATLAS: PART_OF, SUBTECHNIQUE_OF, MITIGATES (ATLAS-scoped)
+### D2 — Edges inside ATLAS: ACHIEVES, SPECIALIZES, MITIGATES (ATLAS-only types)
+
+*Amended for spec v1.2.1 (2026-09-27, open question 1).* As accepted in
+v1.2.0 this section reused the ATT&CK relationship types, scoped by label.
+HC's answer to open question 1 adopts alternative A5 instead: ATLAS uses its
+own relationship names.
 
 ```
-(:AtlasTechnique|AtlasSubTechnique)-[:PART_OF]->(:AtlasTactic)          source: achieves
-(:AtlasSubTechnique)-[:SUBTECHNIQUE_OF]->(:AtlasTechnique)              source: specializes
+(:AtlasTechnique|AtlasSubTechnique)-[:ACHIEVES]->(:AtlasTactic)         source: achieves
+(:AtlasSubTechnique)-[:SPECIALIZES]->(:AtlasTechnique)                  source: specializes
 (:AtlasMitigation)-[:MITIGATES]->(:AtlasTechnique|AtlasSubTechnique)    source: mitigates
 ```
 
-OWL: `atlas:part_of`, `atlas:subtechnique_of` (functional),
-`atlas:mitigates` — new properties in `atlas:`, **not** aligned to
+OWL (`atlas-ontology-v1.1.owl`): `atlas:achieves`, `atlas:specializes`
+(functional), `atlas:mitigates` — properties in `atlas:`, **not** aligned to
 `attack:contains_by`, `kgcs:belongs_to`, `attack:subtechnique_of` or
-`kgcs:mitigated_by`. The graph relationship *types* `PART_OF` and
-`SUBTECHNIQUE_OF` are reused because they mean the same thing inside a
-matrix; they are **scoped by label**: an ATLAS `PART_OF` always goes from an
-`Atlas*` node to an `AtlasTactic`, never to or from an ATT&CK node
-(`shapes/atlas.shacl.ttl`). `MITIGATES` keeps the source's direction
+`kgcs:mitigated_by`. The graph relationship types `ACHIEVES` and
+`SPECIALIZES` are the source's own names and are used by no other standard,
+so an ATLAS node never carries an ATT&CK `PART_OF` or `SUBTECHNIQUE_OF` and
+no ATT&CK count or export can include an ATLAS edge. The v1.0 properties
+`atlas:part_of` / `atlas:subtechnique_of` (sealed in
+`atlas-ontology-v1.0.owl`) are deprecated and fail the closed shapes.
+`MITIGATES` keeps the source's direction
 (mitigation → technique), unlike the chain's `MITIGATED_BY` (technique →
 D3FEND), because it is a different relation from a different publisher.
 
-- `PART_OF` is written for **every** `achieves` entry, including the 94 on
+- `ACHIEVES` is written for **every** `achieves` entry, including the 94 on
   sub-techniques. This differs from the ATT&CK graph, where
   `SubTechnique` nodes carry no `PART_OF`; the ATLAS source states the
   sub-technique's tactic explicitly, and in 2026.09 every sub-technique's
@@ -230,9 +237,9 @@ chain hop).
 
 **A5 — Separate edge names (`ACHIEVES`, `SPECIALIZES`) instead of reusing
 `PART_OF` / `SUBTECHNIQUE_OF`.** Avoids any count collision with ATT&CK.
-Not chosen because the session card fixes the names and the edges mean
-the same thing inside a matrix; the collision risk is handled by label
-scoping (D2) and the consequence below. Open question 1.
+Not chosen in v1.2.0 (the session card fixed the reused names; the collision
+risk was to be handled by label scoping). **Adopted in v1.2.1** by HC's
+answer to open question 1 (2026-09-27); D2 now describes it.
 
 **A6 — STIX (`stix-atlas.json`) as the source of record.** Same counts, but
 drops `maturity` and ATLAS's own relationship types. The YAML is chosen;
@@ -243,22 +250,20 @@ the STIX equivalents are listed in the mapping doc for cross-checking.
 - **Spec:** new module, shape file, mapping doc; `build.shacl.ttl` v1.2
   gains `ATLAS`; namespace policy v1.2 gains `atlas:`; contract labels
   `AtlasTactic`, `AtlasTechnique`, `AtlasSubTechnique`, `AtlasMitigation`,
-  edges `PART_OF` / `SUBTECHNIQUE_OF` (ATLAS-scoped), `MITIGATES`,
+  edges `ACHIEVES` / `SPECIALIZES` (ATLAS-only, v1.2.1), `MITIGATES`,
   `ADAPTED_FROM`; invariant 10. No frozen file is modified; ATT&CK shapes
   and Core are untouched.
-- **Counts that change in the graph.** `PART_OF` (+225) and
-  `SUBTECHNIQUE_OF` (+88) grow when ATLAS is loaded. Every count, export or
-  post-load check of these two types **must qualify the labels**
-  (`(:Technique)-[:PART_OF]->(:Tactic)`, `(:SubTechnique)-[:SUBTECHNIQUE_OF]->(:Technique)`).
-  The existing checks do (`attck-to-owl-v1.0.md`, coverage matrix ETL
-  priority 7); the snapshot v12 exports and the `extract_neo4j_stats.py`
-  minimums in session Q18/Q19 must be checked for unqualified counts
-  before the chain-equivalence gate.
+- **Counts in the graph (v1.2.1).** Loading ATLAS adds 225 `ACHIEVES` and
+  88 `SPECIALIZES` edges and leaves every `PART_OF` and `SUBTECHNIQUE_OF`
+  count unchanged, qualified or not. As accepted in v1.2.0 (reused names)
+  these two types would have grown by 225 / 88 and every consumer count
+  would have had to qualify both endpoint labels; the v1.2.1 rename removes
+  that obligation (see the edge-names note below).
 - **Pipeline (session Q18, not done here):** downloader `mitre_atlas`
   (versioned YAML, pinned release); `load_atlas.py` after `load_attck.py`
   (ADAPTED_FROM needs the ATT&CK nodes); unique constraint on `atlasId`
-  per label; expected counts 16 / 120 / 88 / 40 nodes, 225 `PART_OF`, 88
-  `SUBTECHNIQUE_OF`, 361 `MITIGATES`, `ADAPTED_FROM` = 44 − unresolved (43
+  per label; expected counts 16 / 120 / 88 / 40 nodes, 225 `ACHIEVES`, 88
+  `SPECIALIZES`, 361 `MITIGATES`, `ADAPTED_FROM` = 44 − unresolved (43
   against the `kgcs-v11` ATT&CK load); post-load checks in
   `mappings/atlas-to-owl-v1.0.md`. **Chain loaders must show an empty diff.**
 - **Agents (`kgcs-server`):** ATLAS is a separate entry point (an AI-system
@@ -266,25 +271,49 @@ the STIX equivalents are listed in the mapping doc for cross-checking.
   `AtlasTechnique -[:ADAPTED_FROM]-> Technique` and then use the ATT&CK
   defensive edges, and must say so in `provenance` (the hop is ATLAS's
   `attack-reference`, not KGCS inference).
+- **Edge names (v1.2.1, open question 1).** The research snapshot script
+  and `validation/extract_neo4j_stats.py` (`kgcs-research`) count and export
+  `PART_OF` / `SUBTECHNIQUE_OF` without label qualification. With the
+  v1.2.0 names every ATLAS load would have entered those ATT&CK counts and
+  exports and broken the `kgcs-v11` / `kgcs-v12` chain-equivalence gate
+  unless each consumer was patched. With `ACHIEVES` / `SPECIALIZES` no
+  ATLAS edge can enter an ATT&CK count or export, and those consumers need
+  no change for ATLAS. Cost: `atlas-ontology-v1.0.owl` was already sealed
+  by tag `v1.2.0` (Hard Rule 1), so the rename ships as a successor module
+  `atlas-ontology-v1.1.owl`; v1.0 stays in the repo, deprecated in the
+  coverage matrix, with its two edge properties marked `owl:deprecated` in
+  v1.1. No graph carries ATLAS edges yet (the loader is session Q18), so no
+  data migration is needed.
 - **Research:** the T1656 gap (ATT&CK technique cited by ATLAS but absent
   from the `kgcs-v11` ATT&CK load) is a data-quality finding for the ATT&CK
   loader, outside this ADR.
 
 ## Open questions — resolved on acceptance (2026-09-27)
 
-HC accepted this ADR as written on 2026-09-27 (commit `1ace23a`). No separate
-answer was recorded per question, so each one below resolves to the option the
-*Decision* section implements (the one marked *proposed* when the question was
-raised). Recorded by the session on 2026-09-27 from that acceptance. Reversing
+HC accepted this ADR as written on 2026-09-27 (commit `1ace23a`). For
+questions 2–6 no separate answer was recorded, so each resolves to the option
+the *Decision* section implements (the one marked *proposed* when the question
+was raised), recorded by the session on 2026-09-27 from that acceptance.
+Question 1 has HC's own answer of 2026-09-27, which the release-notes commit
+`60bb876` recorded wrongly as the proposed option; it is corrected below and
+applied in spec v1.2.1. Reversing
 any item is a CHANGELOG note on a v1.2.x, not a silent edit of this list.
 
 1. **Edge names.** Reuse `PART_OF` / `SUBTECHNIQUE_OF` scoped by label
    (proposed, as the card specifies) or introduce `ACHIEVES` /
    `SPECIALIZES` (A5) so no ATT&CK count can ever include ATLAS edges?
 
-   **Resolved:** Reuse `PART_OF` / `SUBTECHNIQUE_OF` scoped by label (D2), as the session card specifies. Consumers must qualify both endpoint labels in every count (see *Upgrade notes*).
+   **Resolved (HC, 2026-09-27):** Adopt A5. `ACHIEVES`
+   (`AtlasTechnique|AtlasSubTechnique → AtlasTactic`, OWL `atlas:achieves`)
+   and `SPECIALIZES` (`AtlasSubTechnique → AtlasTechnique`, OWL
+   `atlas:specializes`). Reason: the research snapshot script and
+   `validation/extract_neo4j_stats.py` count and export `PART_OF` /
+   `SUBTECHNIQUE_OF` without label qualification; ATLAS edges must never
+   enter an ATT&CK count or export. `MITIGATES` and `ADAPTED_FROM` are
+   unchanged. Applied in spec v1.2.1 (`atlas-ontology-v1.1.owl`,
+   `shapes/atlas.shacl.ttl` v1.1); see D2 and *Consequences*.
 
-2. **`PART_OF` on sub-techniques.** Write all 225 `achieves` entries
+2. **`PART_OF` (since v1.2.1 `ACHIEVES`) on sub-techniques.** Write all 225 `achieves` entries
    (proposed; the source states them) or only the 131 on top-level
    techniques, mirroring the ATT&CK graph?
 

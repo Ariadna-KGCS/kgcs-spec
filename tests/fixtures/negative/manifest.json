@@ -523,12 +523,12 @@
       }
     ]
   },
-  "atlas-part-of-attack-tactic.ttl": {
-    "description": "atlas.shacl AtlasTechniqueShape: ATLAS PART_OF to an ATT&CK Tactic (PART_OF is label-scoped)",
+  "atlas-achieves-attack-tactic.ttl": {
+    "description": "atlas.shacl AtlasTechniqueShape: ATLAS ACHIEVES to an ATT&CK Tactic (ACHIEVES reaches AtlasTactic only)",
     "expected": [
       {
         "focus": "urn:kgcs:fixture:aml-t0091",
-        "path": "atlas#part_of",
+        "path": "atlas#achieves",
         "constraint": "sh:ClassConstraintComponent",
         "severity": "sh:Violation"
       }
@@ -609,12 +609,23 @@
       }
     ]
   },
-  "atlas-subtechnique-without-parent.ttl": {
-    "description": "atlas.shacl AtlasSubTechniqueShape: sub-technique without SUBTECHNIQUE_OF parent (source: exactly one specializes)",
+  "attack-specializes-atlas.ttl": {
+    "description": "atlas.shacl AtlasBoundaryShape: ATT&CK SubTechnique made to SPECIALIZE an AtlasTechnique (SPECIALIZES is accepted only from an ATLAS node)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091",
+        "path": "atlas#specializes",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-subtechnique-without-specializes.ttl": {
+    "description": "atlas.shacl AtlasSubTechniqueShape: sub-technique without SPECIALIZES parent (source: exactly one specializes)",
     "expected": [
       {
         "focus": "urn:kgcs:fixture:aml-neg",
-        "path": "atlas#subtechnique_of",
+        "path": "atlas#specializes",
         "constraint": "sh:MinCountConstraintComponent",
         "severity": "sh:Violation"
       }
@@ -625,18 +636,18 @@
     "expected": [
       {
         "focus": "urn:kgcs:fixture:aml-neg",
-        "path": "atlas#subtechnique_of",
+        "path": "atlas#specializes",
         "constraint": "sh:SPARQLConstraintComponent",
         "severity": "sh:Violation"
       }
     ]
   },
   "atlas-subtechnique-tactic-not-on-parent.ttl": {
-    "description": "atlas.shacl AtlasSubTechniqueTacticSubsetShape (Warning): sub-technique PART_OF a tactic its parent is not",
+    "description": "atlas.shacl AtlasSubTechniqueTacticSubsetShape (Warning): sub-technique ACHIEVES a tactic its parent does not",
     "expected": [
       {
         "focus": "urn:kgcs:fixture:aml-t0091-000",
-        "path": "atlas#part_of",
+        "path": "atlas#achieves",
         "constraint": "sh:SPARQLConstraintComponent",
         "severity": "sh:Warning"
       }

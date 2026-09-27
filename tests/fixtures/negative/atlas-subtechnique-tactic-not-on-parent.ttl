@@ -15,4 +15,4 @@ fx:aml-ta0013 a atlas:AtlasTactic ;
     atlas:modifiedDate "2023-10-25"^^xsd:date ;
     atlas:matrixPosition 10 .
 
-fx:aml-t0091-000 atlas:part_of fx:aml-ta0013 .
+fx:aml-t0091-000 atlas:achieves fx:aml-ta0013 .

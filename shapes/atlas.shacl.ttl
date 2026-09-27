@@ -1,8 +1,13 @@
-# KGCS ATLAS SHACL Shapes v1.0
+# KGCS ATLAS SHACL Shapes v1.1
 #
 # Validates AtlasTactic, AtlasTechnique, AtlasSubTechnique and AtlasMitigation
 # nodes and the ADAPTED_FROM edge against the ATLAS module
-# (ontology/standards/atlas-ontology-v1.0.owl, ADR-0004).
+# (ontology/standards/atlas-ontology-v1.1.owl, ADR-0004).
+#
+# v1.1 (spec v1.2.1): the ATLAS-internal edges are atlas:achieves (graph
+# ACHIEVES) and atlas:specializes (graph SPECIALIZES), replacing the v1.0
+# atlas:part_of / atlas:subtechnique_of (ADR-0004 open question 1). A node
+# still carrying a v1.0 edge fails the closed shapes.
 #
 # Source standard: MITRE ATLAS, mitre-atlas/atlas-data dist/v6/ATLAS-<release>.yaml
 # (format 6.0.0; verified on release 2026.09, mappings/atlas-to-owl-v1.0.md).
@@ -12,8 +17,8 @@
 # parallel matrix beside ATT&CK, not a hop of the chain):
 #
 #   CLOSED. The four node shapes are sh:closed: an ATLAS node may carry only
-#   its own datatype properties, the ATLAS-internal edges (PART_OF,
-#   SUBTECHNIQUE_OF, MITIGATES) and ADAPTED_FROM. No ATLAS -> D3FEND / CAR /
+#   its own datatype properties, the ATLAS-internal edges (ACHIEVES,
+#   SPECIALIZES, MITIGATES) and ADAPTED_FROM. No ATLAS -> D3FEND / CAR /
 #   SHIELD / ENGAGE / CWE edge can exist.
 #
 #   BOUNDARY. atlas:AtlasBoundaryShape rejects any edge INTO an ATLAS node
@@ -27,9 +32,10 @@
 # (atlas:AdaptedFromStatement, ADR-0002 reification pattern). Missing
 # provenance is a Violation: there are no legacy ADAPTED_FROM edges.
 #
-# Graph relationship types PART_OF and SUBTECHNIQUE_OF are shared with
-# ATT&CK and scoped by label; in RDF they are distinct properties
-# (atlas:part_of, atlas:subtechnique_of), so the ATT&CK shapes never see
+# Graph relationship types ACHIEVES and SPECIALIZES are ATLAS-only: they
+# are never shared with the ATT&CK PART_OF / SUBTECHNIQUE_OF, so no
+# unqualified ATT&CK count or export can include an ATLAS edge. In RDF they
+# are atlas:achieves and atlas:specializes; the ATT&CK shapes never see
 # ATLAS edges and vice versa.
 #
 # sh:closed lists rdf:type and owl:sameAs as ignored: the harness's OWL-RL
@@ -196,12 +202,12 @@ atlas:AtlasTechniqueShape
         sh:message "AtlasTechnique.platforms must hold at least one of Enterprise, Predictive AI, Generative AI, Agentic AI." ;
         sh:severity sh:Violation ;
     ] ;
-    # PART_OF (source `achieves`): at least one ATLAS tactic (120 of 120 in 2026.09)
+    # ACHIEVES (source `achieves`): at least one ATLAS tactic (120 of 120 in 2026.09)
     sh:property [
-        sh:path atlas:part_of ;
+        sh:path atlas:achieves ;
         sh:class atlas:AtlasTactic ;
         sh:minCount 1 ;
-        sh:message "AtlasTechnique must be PART_OF at least one AtlasTactic (never an ATT&CK Tactic)." ;
+        sh:message "AtlasTechnique must ACHIEVE at least one AtlasTactic (never an ATT&CK Tactic)." ;
         sh:severity sh:Violation ;
     ] ;
     # ADAPTED_FROM: at most one ATT&CK Technique or SubTechnique
@@ -283,21 +289,21 @@ atlas:AtlasSubTechniqueShape
         sh:message "AtlasSubTechnique.platforms must hold at least one of Enterprise, Predictive AI, Generative AI, Agentic AI." ;
         sh:severity sh:Violation ;
     ] ;
-    # SUBTECHNIQUE_OF (source `specializes`): exactly one ATLAS parent
+    # SPECIALIZES (source `specializes`): exactly one ATLAS parent
     sh:property [
-        sh:path atlas:subtechnique_of ;
+        sh:path atlas:specializes ;
         sh:class atlas:AtlasTechnique ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        sh:message "AtlasSubTechnique must have exactly one SUBTECHNIQUE_OF parent AtlasTechnique." ;
+        sh:message "AtlasSubTechnique must SPECIALIZE exactly one parent AtlasTechnique." ;
         sh:severity sh:Violation ;
     ] ;
-    # PART_OF (source `achieves` on the sub-technique; 88 of 88 in 2026.09)
+    # ACHIEVES (source `achieves` on the sub-technique; 88 of 88 in 2026.09)
     sh:property [
-        sh:path atlas:part_of ;
+        sh:path atlas:achieves ;
         sh:class atlas:AtlasTactic ;
         sh:minCount 1 ;
-        sh:message "AtlasSubTechnique must be PART_OF at least one AtlasTactic." ;
+        sh:message "AtlasSubTechnique must ACHIEVE at least one AtlasTactic." ;
         sh:severity sh:Violation ;
     ] ;
     sh:property [
@@ -312,11 +318,11 @@ atlas:AtlasSubTechniqueShape
     sh:sparql [
         a sh:SPARQLConstraint ;
         sh:prefixes atlas:ATLASShapesPrefixes ;
-        sh:message "SUBTECHNIQUE_OF parent's atlasId must be the sub-technique's atlasId without its last .### segment." ;
+        sh:message "SPECIALIZES parent's atlasId must be the sub-technique's atlasId without its last .### segment." ;
         sh:select """
             SELECT $this ?value ?path WHERE {
-                $this atlas:subtechnique_of ?value .
-                BIND (atlas:subtechnique_of AS ?path)
+                $this atlas:specializes ?value .
+                BIND (atlas:specializes AS ?path)
                 $this atlas:atlasId ?sid .
                 ?value atlas:atlasId ?pid .
                 FILTER (!STRSTARTS(?sid, CONCAT(?pid, ".")))
@@ -333,13 +339,13 @@ atlas:AtlasSubTechniqueTacticSubsetShape
     sh:sparql [
         a sh:SPARQLConstraint ;
         sh:prefixes atlas:ATLASShapesPrefixes ;
-        sh:message "AtlasSubTechnique is PART_OF a tactic its parent AtlasTechnique is not PART_OF (never observed in the source; check the release)." ;
+        sh:message "AtlasSubTechnique ACHIEVES a tactic its parent AtlasTechnique does not ACHIEVE (never observed in the source; check the release)." ;
         sh:select """
             SELECT $this ?value ?path WHERE {
-                $this atlas:part_of ?value .
-                BIND (atlas:part_of AS ?path)
-                $this atlas:subtechnique_of ?parent .
-                FILTER NOT EXISTS { ?parent atlas:part_of ?value }
+                $this atlas:achieves ?value .
+                BIND (atlas:achieves AS ?path)
+                $this atlas:specializes ?parent .
+                FILTER NOT EXISTS { ?parent atlas:achieves ?value }
             }
         """ ;
     ] .
@@ -571,7 +577,7 @@ atlas:AdaptedFromReferenceAgreementShape
 # ---------------------------------------------------------------------------
 # Boundary guard: nothing outside ATLAS points INTO an ATLAS node
 #
-# Allowed incoming triples: atlas:part_of / atlas:subtechnique_of /
+# Allowed incoming triples: atlas:achieves / atlas:specializes /
 # atlas:mitigates from an ATLAS node, rdf:subject from an
 # AdaptedFromStatement, and the harness's reflexive owl:sameAs. Anything
 # else - CAPEC IMPLEMENTS, ATT&CK SUBTECHNIQUE_OF / PART_OF, D3FEND edges -
@@ -591,7 +597,7 @@ atlas:AtlasBoundaryShape
                 ?s ?path $this .
                 FILTER (?path != owl:sameAs)
                 FILTER (!(
-                    (?path IN (atlas:part_of, atlas:subtechnique_of, atlas:mitigates)
+                    (?path IN (atlas:achieves, atlas:specializes, atlas:mitigates)
                         && EXISTS { ?s a ?c .
                                     FILTER (?c IN (atlas:AtlasTechnique, atlas:AtlasSubTechnique, atlas:AtlasMitigation)) })
                     || (?path = rdf:subject && EXISTS { ?s a atlas:AdaptedFromStatement })

@@ -20,7 +20,7 @@ This folder contains SHACL shape files that validate the KGCS OWL ontology (sche
 | `engage.shacl.ttl` | EngagementConcept (at least one of: activityId EAC/SAC, approachId EAP/SAP, goalId EGO/SGO — all patterned) |
 | `build.shacl.ttl` (v1.2) | BuildMetadata (specVersion semver, buildTimestamp, pipelineCommit hex, sourceSnapshots `<SOURCE>=<snapshot>`; v1.1 at most one value per SOURCE; v1.2 SOURCE vocabulary gains `KEV` and `EPSS`) |
 | `decision.shacl.ttl` (v1.0) | Decision extension (ADR-0003): `KevEntry`, `EpssScore`, `SsvcDecision` — closed node shapes (no edge may leave a decision node), field validation with the CISA / FIRST / SSVC vocabularies, one node per CVE (KEV) / per (CVE, scoreDate) (EPSS) / per (CVE, timestamp) (SSVC) and cveId agreement with the adhering Vulnerability (SHACL-SPARQL); `*AdherenceShape`s reject any incoming edge other than the has_* edge from a Vulnerability; `decision:VulnerabilityDecisionEdgesShape` checks edge targets and `HAS_KEV_ENTRY` maxCount 1 |
-| `atlas.shacl.ttl` (v1.0) | ATLAS module (ADR-0004): `AtlasTactic` (AML.TA####, matrixPosition), `AtlasTechnique` (AML.T####), `AtlasSubTechnique` (AML.T####.###, exactly one SUBTECHNIQUE_OF parent whose id is the prefix), `AtlasMitigation` (AML.M####) — closed node shapes with the ATLAS vocabularies (maturity, platforms, categories, lifecycle phases); `atlas:AtlasSubTechniqueTacticSubsetShape` (Warning); `atlas:AdaptedFromStatementShape`, `atlas:AdaptedFromProvenanceShape` (every ADAPTED_FROM carries its `attack-reference` provenance) and `atlas:AdaptedFromReferenceAgreementShape` (Warning, revoked-by remap); `atlas:AtlasBoundaryShape` rejects any edge into an ATLAS node from outside ATLAS |
+| `atlas.shacl.ttl` (v1.1, spec v1.2.1) | ATLAS module (ADR-0004, `atlas-ontology-v1.1.owl`): `AtlasTactic` (AML.TA####, matrixPosition), `AtlasTechnique` (AML.T####, at least one ACHIEVES), `AtlasSubTechnique` (AML.T####.###, exactly one SPECIALIZES parent whose id is the prefix), `AtlasMitigation` (AML.M####) — closed node shapes with the ATLAS vocabularies (maturity, platforms, categories, lifecycle phases); `atlas:AtlasSubTechniqueTacticSubsetShape` (Warning); `atlas:AdaptedFromStatementShape`, `atlas:AdaptedFromProvenanceShape` (every ADAPTED_FROM carries its `attack-reference` provenance) and `atlas:AdaptedFromReferenceAgreementShape` (Warning, revoked-by remap); `atlas:AtlasBoundaryShape` rejects any edge into an ATLAS node from outside ATLAS |
 | `build.shacl.ttl` (v1.2, ATLAS) | SOURCE vocabulary also gains `ATLAS` (`ATLAS=<collection.version>`) |
 
 ## Key Invariants (core.shacl.ttl)
@@ -64,9 +64,12 @@ and `atlas:AtlasBoundaryShape` rejects any edge into an ATLAS node that is
 not an ATLAS-internal edge from an ATLAS node (a CAPEC `IMPLEMENTS` or an
 ATT&CK `SUBTECHNIQUE_OF` onto an ATLAS technique fails it). The one edge
 that leaves ATLAS, `ADAPTED_FROM`, is allowed by the closed shapes and must
-carry its provenance statement. The ATLAS graph edges `PART_OF` and
-`SUBTECHNIQUE_OF` are distinct RDF properties (`atlas:part_of`,
-`atlas:subtechnique_of`), so the ATT&CK and Core shapes never see them.
+carry its provenance statement. Since v1.1 (spec v1.2.1) the ATLAS
+hierarchy edges are `ACHIEVES` (`atlas:achieves`) and `SPECIALIZES`
+(`atlas:specializes`), relationship types ATLAS does not share with ATT&CK,
+so the ATT&CK and Core shapes never see them and no ATT&CK `PART_OF` /
+`SUBTECHNIQUE_OF` count includes them. A node still carrying the v1.0
+`atlas:part_of` / `atlas:subtechnique_of` fails the closed shapes.
 
 ## SHACL-SPARQL severity
 

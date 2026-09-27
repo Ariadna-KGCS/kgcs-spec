@@ -1,8 +1,16 @@
 # ATLAS to OWL Mapping v1.0
 
 Design: [ADR-0004](../docs/adr/ADR-0004-atlas-module.md). Ontology:
-`ontology/standards/atlas-ontology-v1.0.owl` (namespace `atlas:`). Shapes:
-`shapes/atlas.shacl.ttl`.
+`ontology/standards/atlas-ontology-v1.1.owl` (namespace `atlas:`). Shapes:
+`shapes/atlas.shacl.ttl` v1.1.
+
+**Spec v1.2.1 (2026-09-27):** the two ATLAS-internal hierarchy edges carry
+the source's own names, `ACHIEVES` (`atlas:achieves`) and `SPECIALIZES`
+(`atlas:specializes`), instead of the label-scoped `PART_OF` /
+`SUBTECHNIQUE_OF` of v1.2.0 (ADR-0004 open question 1). ATLAS never writes
+an ATT&CK relationship type, so no ATT&CK count or export can include an
+ATLAS edge. `atlas-ontology-v1.0.owl` is sealed by tag `v1.2.0` and
+superseded by `atlas-ontology-v1.1.owl`.
 
 ## Sources (verified 2026-09-27)
 
@@ -131,8 +139,8 @@ contain it. On a chain equivalent to `kgcs-v11` the loader writes **43**
 
 | Source | OWL property | Graph edge | Expected count (2026.09) |
 | --- | --- | --- | --- |
-| `achieves` (technique / sub-technique → tactic) | `atlas:part_of` | `(:AtlasTechnique\|AtlasSubTechnique)-[:PART_OF]->(:AtlasTactic)` | 225 (131 + 94) |
-| `specializes` (sub-technique → technique) | `atlas:subtechnique_of` | `(:AtlasSubTechnique)-[:SUBTECHNIQUE_OF]->(:AtlasTechnique)` | 88 |
+| `achieves` (technique / sub-technique → tactic) | `atlas:achieves` | `(:AtlasTechnique\|AtlasSubTechnique)-[:ACHIEVES]->(:AtlasTactic)` | 225 (131 + 94) |
+| `specializes` (sub-technique → technique) | `atlas:specializes` | `(:AtlasSubTechnique)-[:SPECIALIZES]->(:AtlasTechnique)` | 88 |
 | `mitigates` (mitigation → technique / sub-technique) | `atlas:mitigates` | `(:AtlasMitigation)-[:MITIGATES]->(:AtlasTechnique\|AtlasSubTechnique)` | 361 (216 + 145) |
 | `attack-reference` on a technique / sub-technique | `atlas:adapted_from` + `atlas:AdaptedFromStatement` | `(:AtlasTechnique\|AtlasSubTechnique)-[:ADAPTED_FROM]->(:Technique\|SubTechnique)` | 44 source rows; 43 against the `kgcs-v11` ATT&CK load (1 unresolved: `T1656`) |
 | `sequences` (matrix → tactic) | — (becomes `atlas:matrixPosition`) | none | 16 values |
@@ -157,9 +165,10 @@ contain it. On a chain equivalent to `kgcs-v11` the loader writes **43**
 3. **Order.** Load ATLAS after ATT&CK (`load_attck.py`): `ADAPTED_FROM` needs
    the ATT&CK nodes. Within ATLAS: tactics, techniques, sub-techniques,
    mitigations, then edges.
-4. **`PART_OF` / `SUBTECHNIQUE_OF`** are `MERGE`d between ATLAS-labelled
+4. **`ACHIEVES` / `SPECIALIZES`** are `MERGE`d between ATLAS-labelled
    nodes only: `MATCH (a:AtlasTechnique {atlasId: $src}), (t:AtlasTactic {atlasId: $tgt})`.
-   Never match an ATLAS id against an unlabelled pattern.
+   Never match an ATLAS id against an unlabelled pattern, and never write
+   the ATT&CK types `PART_OF` / `SUBTECHNIQUE_OF` from the ATLAS loader.
 5. **`ADAPTED_FROM`.** Only for objects with `attack-reference`. Resolve
    `attack-reference.id` to `(:Technique {attackId})` for `T####` or
    `(:SubTechnique {attackId})` for `T####.###`, applying the shared v1.1
@@ -184,8 +193,8 @@ MATCH (n:AtlasTactic) RETURN count(n);                       // 16
 MATCH (n:AtlasTechnique) RETURN count(n);                    // 120
 MATCH (n:AtlasSubTechnique) RETURN count(n);                 // 88
 MATCH (n:AtlasMitigation) RETURN count(n);                   // 40
-MATCH (:AtlasTechnique|AtlasSubTechnique)-[r:PART_OF]->(:AtlasTactic) RETURN count(r);          // 225
-MATCH (:AtlasSubTechnique)-[r:SUBTECHNIQUE_OF]->(:AtlasTechnique) RETURN count(r);              // 88
+MATCH (:AtlasTechnique|AtlasSubTechnique)-[r:ACHIEVES]->(:AtlasTactic) RETURN count(r);         // 225
+MATCH (:AtlasSubTechnique)-[r:SPECIALIZES]->(:AtlasTechnique) RETURN count(r);                  // 88
 MATCH (:AtlasMitigation)-[r:MITIGATES]->(:AtlasTechnique|AtlasSubTechnique) RETURN count(r);    // 361
 MATCH (:AtlasTechnique|AtlasSubTechnique)-[r:ADAPTED_FROM]->(:Technique|SubTechnique)
 RETURN count(r);                                             // 44 - unresolved (43 on a kgcs-v11 chain)
@@ -202,16 +211,22 @@ MATCH ()-[r:ADAPTED_FROM]->()
 WHERE r.sourceField <> 'attack-reference' OR r.attackReferenceId IS NULL OR r.attackReferenceUrl IS NULL
 RETURN count(r);                                             // 0
 
-// the ATT&CK counts do not move (label-qualified)
+// no ATLAS node touches an ATT&CK hierarchy type
+MATCH (a)-[r:PART_OF|SUBTECHNIQUE_OF]-()
+WHERE any(l IN labels(a) WHERE l STARTS WITH 'Atlas')
+RETURN count(r);                                             // 0
+
+// the ATT&CK counts do not move
 MATCH (:Technique)-[r:PART_OF]->(:Tactic) RETURN count(r);   // unchanged from the pre-ATLAS load (436 on kgcs-v11)
 MATCH (:SubTechnique)-[r:SUBTECHNIQUE_OF]->(:Technique) RETURN count(r);  // unchanged (540)
 ```
 
-**Unqualified counts change.** `MATCH ()-[r:PART_OF]->()` grows by 225 and
-`MATCH ()-[r:SUBTECHNIQUE_OF]->()` by 88 once ATLAS is loaded. Any stats
-minimum, snapshot export or equivalence check that counts these types
-without labels must be qualified before `kgcs-v12` is compared with
-`kgcs-v11` (ADR-0004, Consequences).
+**ATT&CK counts are unaffected, qualified or not.** Since v1.2.1 the ATLAS
+edges are `ACHIEVES` and `SPECIALIZES`, so `MATCH ()-[r:PART_OF]->()` and
+`MATCH ()-[r:SUBTECHNIQUE_OF]->()` do not move when ATLAS is loaded; the
+unqualified counts and exports of the research snapshot script and
+`validation/extract_neo4j_stats.py` stay valid for the `kgcs-v12` versus
+`kgcs-v11` comparison (ADR-0004, open question 1 and Consequences).
 
 ## Source-profile evidence
 

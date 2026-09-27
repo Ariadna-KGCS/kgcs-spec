@@ -1,0 +1,248 @@
+@prefix atlas:  <http://www.motherhacker.me/kgcs/ontology/atlas#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology Declaration
+#
+# MITRE ATLAS (Adversarial Threat Landscape for AI Systems) module
+# v1.1 (ADR-0004, docs/adr/ADR-0004-atlas-module.md).
+#
+# v1.1 (spec v1.2.1, 2026-09-27) supersedes atlas-ontology-v1.0.owl,
+# which is sealed by tag v1.2.0 (Hard Rule 1) and kept unmodified.
+# The only change is the two ATLAS-internal edges, renamed to the
+# source's own relationship names (ADR-0004 open question 1, HC's
+# answer: alternative A5):
+#   atlas:part_of         -> atlas:achieves     (graph ACHIEVES)
+#   atlas:subtechnique_of -> atlas:specializes  (graph SPECIALIZES)
+# so that no unqualified ATT&CK PART_OF / SUBTECHNIQUE_OF count or
+# export can ever include an ATLAS edge. Classes, datatype properties,
+# atlas:mitigates and atlas:adapted_from are unchanged. The two v1.0
+# terms are marked owl:deprecated below; no shape uses them.
+#
+# ATLAS is a PARALLEL MATRIX beside ATT&CK for AI-enabled systems.
+# It is not a hop of the causal chain (Hard Rule 2):
+#   - no CAPEC -> ATLAS edge (AttackPattern never IMPLEMENTS an
+#     AtlasTechnique);
+#   - no ATLAS -> defensive standard edge (D3FEND, CAR, SHIELD,
+#     ENGAGE never attach to an ATLAS node);
+#   - the ONLY cross-standard edge is atlas:adapted_from
+#     (AtlasTechnique | AtlasSubTechnique -> ATT&CK Technique),
+#     written only where the ATLAS object carries the source field
+#     `attack-reference`, with that field as edge provenance
+#     (atlas:AdaptedFromStatement, the ADR-0002 reification pattern).
+# shapes/atlas.shacl.ttl enforces this with closed node shapes and
+# an incoming-edge boundary guard.
+#
+# Source of record: mitre-atlas/atlas-data dist/v6/ATLAS-<release>.yaml,
+# format 6.0.0 (verified on release 2026.09, 2026-09-27;
+# mappings/atlas-to-owl-v1.0.md). STIX equivalents (release asset
+# stix-atlas.json) are listed in the mapping doc.
+#
+# Namespace (docs/namespace-policy-v1.2.md): atlas:, one namespace
+# for the standard (Hard Rule 5: AML.* identifiers never share a
+# property with ATT&CK T*/TA* identifiers).
+#
+# Design choices recorded in ADR-0004:
+#   - The four classes are pairwise disjoint. AtlasSubTechnique is
+#     NOT a subclass of AtlasTechnique: the graph keeps separate
+#     labels, and repeating the frozen ATT&CK SubTechnique-subclass
+#     axiom would repeat the OWL-vs-graph contradiction recorded in
+#     attck-core-alignment-v1.0.owl.
+#   - No ATLAS term is aligned to a Core or ATT&CK term; no
+#     alignment module exists for ATLAS on purpose.
+#   - No inverse properties: an inverse of adapted_from would be an
+#     edge leaving an ATT&CK node, and the ATLAS-internal edges are
+#     only ever written in the source's direction.
+#   - Datatype properties are camelCase and equal to the graph
+#     property names (the ATT&CK module's convention).
+#
+# Graph labels: AtlasTactic, AtlasTechnique, AtlasSubTechnique,
+# AtlasMitigation. Graph relationships: ACHIEVES, SPECIALIZES
+# (ATLAS-only relationship types, never shared with ATT&CK),
+# MITIGATES, ADAPTED_FROM.
+#################################################################
+
+atlas:AtlasOntology a owl:Ontology ;
+    rdfs:label "KGCS ATLAS Ontology v1.1" ;
+    owl:versionInfo "1.1" ;
+    rdfs:comment "Supersedes atlas-ontology-v1.0.owl (sealed by tag v1.2.0): the ATLAS-internal edges are atlas:achieves (graph ACHIEVES) and atlas:specializes (graph SPECIALIZES) instead of atlas:part_of / atlas:subtechnique_of (ADR-0004 open question 1). MITRE ATLAS tactics, techniques, sub-techniques and mitigations for AI-enabled systems: a parallel matrix beside ATT&CK, in its own namespace, outside the causal chain. The only cross-standard edge is atlas:adapted_from towards ATT&CK techniques, written only where ATLAS declares attack-reference. Case studies are out of scope (ADR-0004 D5)." ;
+    owl:imports <http://www.motherhacker.me/kgcs/ontology/core#> ,
+                <http://www.motherhacker.me/kgcs/ontology/attack#> .
+
+#################################################################
+# Classes
+#################################################################
+
+atlas:AtlasTactic a owl:Class ;
+    rdfs:label "ATLAS Tactic" ;
+    rdfs:comment "ATLAS tactic (source `tactics`, object-type tactic, id AML.TA####): the adversary's objective in an attack on an AI-enabled system. Graph label: AtlasTactic." ;
+    owl:disjointWith atlas:AtlasTechnique , atlas:AtlasSubTechnique , atlas:AtlasMitigation ,
+        kgcs:Tactic , kgcs:Technique , attack:SubTechnique .
+
+atlas:AtlasTechnique a owl:Class ;
+    rdfs:label "ATLAS Technique" ;
+    rdfs:comment "Top-level ATLAS technique (source `techniques`, object-type technique, id AML.T####, no `specializes` relationship). Not an ATT&CK technique: disjoint with kgcs:Technique even when ATLAS declares it adapted from one. Graph label: AtlasTechnique." ;
+    owl:disjointWith atlas:AtlasTactic , atlas:AtlasSubTechnique , atlas:AtlasMitigation ,
+        kgcs:Technique , kgcs:Tactic , attack:SubTechnique , kgcs:AttackPattern , kgcs:DefensiveTechnique .
+
+atlas:AtlasSubTechnique a owl:Class ;
+    rdfs:label "ATLAS Sub-Technique" ;
+    rdfs:comment "ATLAS sub-technique (source `techniques`, id AML.T####.###, exactly one `specializes` relationship to its parent, whose id is the id prefix). Separate class and label, not a subclass of atlas:AtlasTechnique (ADR-0004 D1). Graph label: AtlasSubTechnique." ;
+    owl:disjointWith atlas:AtlasTactic , atlas:AtlasTechnique , atlas:AtlasMitigation ,
+        kgcs:Technique , kgcs:Tactic , attack:SubTechnique , kgcs:AttackPattern , kgcs:DefensiveTechnique .
+
+atlas:AtlasMitigation a owl:Class ;
+    rdfs:label "ATLAS Mitigation" ;
+    rdfs:comment "ATLAS mitigation (source `mitigations`, object-type mitigation, id AML.M####). Not a D3FEND defensive technique: ATLAS mitigations attach only to ATLAS techniques via atlas:mitigates. Graph label: AtlasMitigation." ;
+    owl:disjointWith atlas:AtlasTactic , atlas:AtlasTechnique , atlas:AtlasSubTechnique ,
+        kgcs:Technique , kgcs:DefensiveTechnique , kgcs:DetectionAnalytic , kgcs:DeceptionTechnique .
+
+atlas:AdaptedFromStatement a owl:Class ;
+    rdfs:subClassOf rdf:Statement ;
+    rdfs:label "ADAPTED_FROM statement" ;
+    rdfs:comment "RDF reification of one ADAPTED_FROM edge: rdf:subject an AtlasTechnique or AtlasSubTechnique, rdf:predicate atlas:adapted_from, rdf:object an ATT&CK Technique or SubTechnique. Exactly one per edge. Carries the edge properties sourceField / attackReferenceId / attackReferenceUrl (provenance: the ATLAS field that declares the adaptation). Graph: the ADAPTED_FROM relationship itself (no node label)." .
+
+#################################################################
+# Object Properties (no inverses)
+#################################################################
+
+atlas:achieves a owl:ObjectProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTechnique atlas:AtlasSubTechnique ) ] ;
+    rdfs:range atlas:AtlasTactic ;
+    rdfs:label "achieves" ;
+    rdfs:comment "ATLAS technique or sub-technique -> ATLAS tactic, one per source `achieves` relationship (source: techniques achieve tactics), written for techniques and sub-techniques. Graph relationship: ACHIEVES (ATLAS-only type; the ATT&CK PART_OF is never used for ATLAS). Not aligned to attack:contains_by / kgcs:belongs_to. Replaces atlas:part_of of v1.0." .
+
+atlas:specializes a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain atlas:AtlasSubTechnique ;
+    rdfs:range atlas:AtlasTechnique ;
+    rdfs:label "specializes" ;
+    rdfs:comment "ATLAS sub-technique -> its parent ATLAS technique (source `specializes`; exactly one per sub-technique; the parent id is the sub-technique id without its last .### segment). Graph relationship: SPECIALIZES (ATLAS-only type; the ATT&CK SUBTECHNIQUE_OF is never used for ATLAS). Not aligned to attack:subtechnique_of / kgcs:subtechnique_of. Replaces atlas:subtechnique_of of v1.0." .
+
+atlas:mitigates a owl:ObjectProperty ;
+    rdfs:domain atlas:AtlasMitigation ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( atlas:AtlasTechnique atlas:AtlasSubTechnique ) ] ;
+    rdfs:label "mitigates" ;
+    rdfs:comment "ATLAS mitigation -> ATLAS technique or sub-technique (source `mitigates`, in the source's direction). Graph relationship: MITIGATES. Distinct from the chain's kgcs:mitigated_by (Technique -> D3FEND)." .
+
+atlas:adapted_from a owl:ObjectProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTechnique atlas:AtlasSubTechnique ) ] ;
+    rdfs:range attack:Technique ;
+    rdfs:label "adapted from" ;
+    rdfs:comment "ATLAS technique or sub-technique -> the ATT&CK technique or sub-technique it was adapted from, written ONLY where the ATLAS object carries `attack-reference` (target resolved by attackId; revoked targets remapped, deprecated and unresolved ones dropped and counted, attck-to-owl-v1.0.md v1.1 bridge rule). The only cross-standard edge of ATLAS; not a hop of the causal chain and not an equivalence. Range attack:Technique covers attack:SubTechnique (frozen subclass axiom). Graph relationship: ADAPTED_FROM, provenance on the edge (atlas:AdaptedFromStatement)." .
+
+#################################################################
+# Datatype Properties - shared by the four ATLAS classes
+#################################################################
+
+atlas:atlasId a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTactic atlas:AtlasTechnique atlas:AtlasSubTechnique atlas:AtlasMitigation ) ] ;
+    rdfs:range xsd:string ;
+    rdfs:label "ATLAS id" ;
+    rdfs:comment "Source `id` (equal to the object's key): AML.TA#### (tactic), AML.T#### (technique), AML.T####.### (sub-technique), AML.M#### (mitigation). Unique per label. Graph property: atlasId." .
+
+atlas:name a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTactic atlas:AtlasTechnique atlas:AtlasSubTechnique atlas:AtlasMitigation ) ] ;
+    rdfs:range xsd:string ;
+    rdfs:label "name" ;
+    rdfs:comment "Source `name`, verbatim. Not unique (e.g. 'Datasets', 'Models', 'AI Agent Tools' name several sub-techniques); never a key. Graph property: name." .
+
+atlas:description a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTactic atlas:AtlasTechnique atlas:AtlasSubTechnique atlas:AtlasMitigation ) ] ;
+    rdfs:range xsd:string ;
+    rdfs:label "description" ;
+    rdfs:comment "Source `description`, verbatim (Markdown with relative ATLAS links). Graph property: description." .
+
+atlas:createdDate a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTactic atlas:AtlasTechnique atlas:AtlasSubTechnique atlas:AtlasMitigation ) ] ;
+    rdfs:range xsd:date ;
+    rdfs:label "created date" ;
+    rdfs:comment "Source `created-date` (YYYY-MM-DD). Graph property: createdDate (string, ISO date)." .
+
+atlas:modifiedDate a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTactic atlas:AtlasTechnique atlas:AtlasSubTechnique atlas:AtlasMitigation ) ] ;
+    rdfs:range xsd:date ;
+    rdfs:label "modified date" ;
+    rdfs:comment "Source `modified-date` (YYYY-MM-DD). Graph property: modifiedDate (string, ISO date)." .
+
+#################################################################
+# Datatype Properties - tactic
+#################################################################
+
+atlas:matrixPosition a owl:DatatypeProperty ;
+    rdfs:domain atlas:AtlasTactic ;
+    rdfs:range xsd:integer ;
+    rdfs:label "matrix position" ;
+    rdfs:comment "Column of the tactic in the ATLAS matrix: `position` of the source relationship ATLAS-matrix `sequences` tactic (1-16 in release 2026.09). Graph property: matrixPosition." .
+
+#################################################################
+# Datatype Properties - technique and sub-technique
+#################################################################
+
+atlas:maturity a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTechnique atlas:AtlasSubTechnique ) ] ;
+    rdfs:range xsd:string ;
+    rdfs:label "maturity" ;
+    rdfs:comment "Source `maturity`: Feasible | Demonstrated | Realized (evidence level of the technique). Not in the STIX export. Graph property: maturity." .
+
+atlas:platforms a owl:DatatypeProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( atlas:AtlasTechnique atlas:AtlasSubTechnique ) ] ;
+    rdfs:range xsd:string ;
+    rdfs:label "platforms" ;
+    rdfs:comment "Source `platforms[]`, one value per member: Enterprise | Predictive AI | Generative AI | Agentic AI (1-4 per technique). STIX x_mitre_platforms. Graph property: platforms (string list)." .
+
+#################################################################
+# Datatype Properties - mitigation
+#################################################################
+
+atlas:categories a owl:DatatypeProperty ;
+    rdfs:domain atlas:AtlasMitigation ;
+    rdfs:range xsd:string ;
+    rdfs:label "categories" ;
+    rdfs:comment "Source `categories[]`, one value per member: Policy | Technical - AI | Technical - Cyber. Graph property: categories (string list)." .
+
+atlas:lifecyclePhases a owl:DatatypeProperty ;
+    rdfs:domain atlas:AtlasMitigation ;
+    rdfs:range xsd:string ;
+    rdfs:label "lifecycle phases" ;
+    rdfs:comment "Source `lifecycle-phases[]`, one value per member: Business and Data Understanding | Data Preparation | AI Model Engineering | AI Model Evaluation | Deployment | Monitoring and Maintenance. Graph property: lifecyclePhases (string list)." .
+
+#################################################################
+# Datatype Properties - ADAPTED_FROM edge provenance
+# (on atlas:AdaptedFromStatement; graph: properties of ADAPTED_FROM)
+#################################################################
+
+atlas:sourceField a owl:DatatypeProperty ;
+    rdfs:domain atlas:AdaptedFromStatement ;
+    rdfs:range xsd:string ;
+    rdfs:label "source field" ;
+    rdfs:comment "Name of the ATLAS field that declares the adaptation; always 'attack-reference' in format 6.0.0 (STIX: external_references[] with source_name 'mitre-attack'). Graph edge property: ADAPTED_FROM.sourceField." .
+
+atlas:attackReferenceId a owl:DatatypeProperty ;
+    rdfs:domain atlas:AdaptedFromStatement ;
+    rdfs:range xsd:string ;
+    rdfs:label "ATT&CK reference id" ;
+    rdfs:comment "Source `attack-reference.id`, verbatim (T#### or T####.###). Equal to the target's attack:attackId unless the loader remapped a revoked target. Graph edge property: ADAPTED_FROM.attackReferenceId." .
+
+atlas:attackReferenceUrl a owl:DatatypeProperty ;
+    rdfs:domain atlas:AdaptedFromStatement ;
+    rdfs:range xsd:string ;
+    rdfs:label "ATT&CK reference URL" ;
+    rdfs:comment "Source `attack-reference.url`, verbatim (https://attack.mitre.org/techniques/T####[/###]/, trailing slash not guaranteed). Graph edge property: ADAPTED_FROM.attackReferenceUrl." .
+
+#################################################################
+# Deprecated v1.0 terms (declared in the sealed
+# atlas-ontology-v1.0.owl; annotated here, never used by a shape,
+# a contract or the loader from spec v1.2.1 on)
+#################################################################
+
+atlas:part_of owl:deprecated true ;
+    rdfs:seeAlso atlas:achieves .
+
+atlas:subtechnique_of owl:deprecated true ;
+    rdfs:seeAlso atlas:specializes .

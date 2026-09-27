@@ -52,6 +52,8 @@ Declared by the standard-scoped module `ontology/standards/atlas-ontology-v1.0.o
 `atlas:ATLASShapesPrefixes` lives in the same namespace, as
 `attack:ATTCKShapesPrefixes` does in `attack:`.
 
+Since spec v1.2.1 the `atlas:` namespace is declared by `ontology/standards/atlas-ontology-v1.1.owl`; `atlas-ontology-v1.0.owl` is deprecated (kept sealed as part of v1.2.0).
+
 ## 3. Extension Namespaces
 
 | Extension | Namespace | Prefix | Since |
