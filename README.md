@@ -48,7 +48,7 @@ per hop.
 
 ## Status
 
-**v1.2.0** (on `feature/spec-v1.2-decision`; local tag after HC's review) — decision extension: `KevEntry`, `EpssScore`, `SsvcDecision` adhered to `Vulnerability` (ADR-0003, Proposed), `shapes/decision.shacl.ttl`; ATLAS module: `atlas-ontology-v1.0.owl`, `shapes/atlas.shacl.ttl` (ADR-0004, Proposed); `build.shacl.ttl` v1.2, namespace policy v1.2. **v1.1.0** (2026-09-26) — first minor release on top of the frozen v1.0 baseline. It adds versioned modules (CWE enrichment, consequences, CVE applicability, CAUSED_BY provenance, graph labels, ATT&CK–core alignment, build metadata), the validation harness, and the 2026-09-26 graph-quality fixes. See `CHANGELOG.md`. **v1.0.0**: the frozen KGCS v1.0 baseline, migrated verbatim from the seed repo (OWL byte-identical).
+**v1.2.0** (2026-09-27; tag `v1.2.0` on `feature/spec-v1.2-decision`, merge to `main` pending) — decision extension: `KevEntry`, `EpssScore`, `SsvcDecision` adhered to `Vulnerability` (ADR-0003, Accepted), `shapes/decision.shacl.ttl`; ATLAS module: `atlas-ontology-v1.0.owl`, `shapes/atlas.shacl.ttl` (ADR-0004, Accepted); `build.shacl.ttl` v1.2, namespace policy v1.2. **v1.1.0** (2026-09-26) — first minor release on top of the frozen v1.0 baseline. It adds versioned modules (CWE enrichment, consequences, CVE applicability, CAUSED_BY provenance, graph labels, ATT&CK–core alignment, build metadata), the validation harness, and the 2026-09-26 graph-quality fixes. See `CHANGELOG.md`. **v1.0.0**: the frozen KGCS v1.0 baseline, migrated verbatim from the seed repo (OWL byte-identical).
 
 ## Validation
 

@@ -293,34 +293,66 @@ are Open question 1.
 - **Explorer:** the three labels get a "decision" colour family and default
   to hidden, like `Consequence`.
 
-## Open questions for HC (block Accepted)
+## Open questions — resolved on acceptance (2026-09-27)
+
+HC accepted this ADR as written on 2026-09-27 (commit `1ace23a`). No separate
+answer was recorded per question, so each one below resolves to the option the
+*Decision* section implements (the one marked *proposed* when the question was
+raised). Recorded by the session on 2026-09-27 from that acceptance. Reversing
+any item is a CHANGELOG note on a v1.2.x, not a silent edit of this list.
 
 1. **Non-ADP SSVC entries.** Load the timestamped entries by CISA-as-CNA
    (`9119a7d8-…`, role "CISA Coordinator", 62 entries in the 2026 file)
    with `sourceRole = cna`, or keep v1.0 to declared ADPs only (proposed)?
    CNA-role entries without timestamp stay out either way (no key).
+
+   **Resolved:** Declared ADPs only in v1.0 (D3). CISA-as-CNA timestamped entries: candidate for a v1.2.x note, counted as dropped by the loader.
+
 2. **KEV `cwes[]`.** Strings on the KevEntry only (proposed, A4 rejected),
    or a future `sourceRoles` value `kev` on `CAUSED_BY` (would change the
    edge count; needs its own ADR after the D3FEND `references_cwe` policy
    call)?
+
+   **Resolved:** Strings on `KevEntry` only (A4 rejected). A `kev` value on `CAUSED_BY.sourceRoles` would need its own ADR after the D3FEND `references_cwe` policy call.
+
 3. **EPSS history depth for `kgcs-v12`.** One score date per CVE (the
    snapshot day; proposed for Q18) or a back-fill of daily files from
    `github.com/empiricalsec/epss_scores` for the E2/E4 temporal partition?
    The model decides the size of the load and whether Q20 needs history.
+
+   **Resolved:** One score date per CVE (the snapshot day) for `kgcs-v12` in Q18. A daily back-fill is a load parameter for Q20 (E2/E4 temporal partition), not a mapping change.
+
 4. **`scoreDate` source.** Date part of the header `score_date` (proposed;
    verified equal to the file date) rather than the file name, so that
    `epss_scores-current.csv.gz` is loadable.
+
+   **Resolved:** Date part of the header `score_date`, so `epss_scores-current.csv.gz` is loadable.
+
 5. **Build-metadata value for EPSS.** `EPSS=<scoreDate>;model:<modelVersion>`
    (proposed) or two keys (`EPSS=` and `EPSS-MODEL=`)?
+
+   **Resolved:** Single key `EPSS=<scoreDate>;model:<modelVersion>` (D6).
+
 6. **`forensicTriage`.** Included as an optional field (verified in the
    CISA schema and the 2026.09.25 catalog); confirm, since it is a 2026
    addition tied to BOD 26-04.
+
+   **Resolved:** Included as an optional field (`forensicTriage`, BOD 26-04, in the CISA schema and the 2026.09.25 catalog).
+
 7. **`decision:` prefix scope.** Ontology IRI and shape-graph nodes only
    (proposed, as `labels:`/`align:`), or drop the shape nodes into `kev:`?
+
+   **Resolved:** `decision:` for the ontology IRI and shape-graph nodes only, as `labels:` / `align:`.
+
 8. **`knownRansomwareCampaignUse` severity.** Absence is a Warning because
    the CISA schema marks it optional, although every current entry has it;
    promote to Violation?
+
+   **Resolved:** Absence of `knownRansomwareCampaignUse` stays a Warning: the CISA schema marks it optional.
+
 9. **`EpssScore ⊥ VulnerabilityScore`.** The disjointness axiom is the only
    OWL statement this module makes about a Core class; confirm it is
    wanted (it is not modification of Core, only a constraint between a new
    class and a frozen one).
+
+   **Resolved:** The `EpssScore ⊥ VulnerabilityScore` disjointness axiom is kept: a constraint between a new class and a frozen one, not a modification of Core.

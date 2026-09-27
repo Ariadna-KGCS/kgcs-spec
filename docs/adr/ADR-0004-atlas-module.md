@@ -270,23 +270,46 @@ the STIX equivalents are listed in the mapping doc for cross-checking.
   from the `kgcs-v11` ATT&CK load) is a data-quality finding for the ATT&CK
   loader, outside this ADR.
 
-## Open questions for HC (block Accepted)
+## Open questions — resolved on acceptance (2026-09-27)
+
+HC accepted this ADR as written on 2026-09-27 (commit `1ace23a`). No separate
+answer was recorded per question, so each one below resolves to the option the
+*Decision* section implements (the one marked *proposed* when the question was
+raised). Recorded by the session on 2026-09-27 from that acceptance. Reversing
+any item is a CHANGELOG note on a v1.2.x, not a silent edit of this list.
 
 1. **Edge names.** Reuse `PART_OF` / `SUBTECHNIQUE_OF` scoped by label
    (proposed, as the card specifies) or introduce `ACHIEVES` /
    `SPECIALIZES` (A5) so no ATT&CK count can ever include ATLAS edges?
+
+   **Resolved:** Reuse `PART_OF` / `SUBTECHNIQUE_OF` scoped by label (D2), as the session card specifies. Consumers must qualify both endpoint labels in every count (see *Upgrade notes*).
+
 2. **`PART_OF` on sub-techniques.** Write all 225 `achieves` entries
    (proposed; the source states them) or only the 131 on top-level
    techniques, mirroring the ATT&CK graph?
+
+   **Resolved:** All 225 `achieves` entries, sub-techniques included: the source states them.
+
 3. **Tactic `attack-reference`.** Add `ADAPTED_FROM` from `AtlasTactic` to
    enterprise `Tactic` (14 edges, all targets exist on `kgcs-v11`), or keep
    the bridge technique-only (proposed for v1.0)?
+
+   **Resolved:** Bridge technique-only in v1.0. `AtlasTactic → Tactic` (14 edges) stays a v1.2.x candidate.
+
 4. **Case studies.** Confirm out of v1.0 and whether an `AtlasCaseStudy`
    module (D5) is wanted for v1.3.
+
+   **Resolved:** Case studies out of v1.0. An `AtlasCaseStudy` module (D5) is a candidate for the phase-C release (v1.3), decided there.
+
 5. **`maturity` and `platforms`.** Stored verbatim with closed vocabularies
    (`Feasible | Demonstrated | Realized`; `Enterprise | Predictive AI |
    Generative AI | Agentic AI`): a new value in a future release fails
    validation until the shape is updated. Confirm the strictness
    (Violation), or downgrade to Warning.
+
+   **Resolved:** Closed vocabularies for `maturity` and `platforms` at Violation: a new source value fails validation until the shape is updated, which is the intended signal.
+
 6. **T1656.** Record the missing ATT&CK technique as a finding for the
    ATT&CK loader / bundle refresh (proposed), or block Q18 on it?
+
+   **Resolved:** `T1656` recorded as a finding for the ATT&CK loader / bundle refresh (session Q18 report); Q18 is not blocked on it.
