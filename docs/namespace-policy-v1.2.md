@@ -2,8 +2,8 @@
 
 Supersedes `namespace-policy-v1.1.md` additively: every v1.0 and v1.1
 namespace and rule is unchanged; v1.2 registers the namespaces of the
-decision extension (ADR-0003). v1.1 stays frozen and remains the reference
-for every v1.1 artifact.
+decision extension (ADR-0003) and of the MITRE ATLAS module (ADR-0004).
+v1.1 stays frozen and remains the reference for every v1.1 artifact.
 
 ## 1. Core Namespace
 
@@ -37,6 +37,21 @@ module lives in `extensions/` because it is cross-publisher. A future
 successor of any of the three may be split into its own file without
 changing a term.
 
+v1.2 also adds the namespace of MITRE ATLAS, a parallel matrix beside
+ATT&CK for AI-enabled systems (ADR-0004). It is **not** `attack:`: ATLAS
+identifiers (`AML.*`) never share a property with ATT&CK identifiers
+(Hard Rule 5), and the ATLAS module declares no term in `attack:` or
+`kgcs:`.
+
+| Standard | Publisher | Namespace | Prefix | Since |
+| --- | --- | --- | --- | --- |
+| ATLAS (Adversarial Threat Landscape for AI Systems) | MITRE | `http://www.motherhacker.me/kgcs/ontology/atlas#` | `atlas:` | v1.2 |
+
+Declared by the standard-scoped module `ontology/standards/atlas-ontology-v1.0.owl`
+(ontology IRI `atlas:AtlasOntology`); the shape-graph prefix node
+`atlas:ATLASShapesPrefixes` lives in the same namespace, as
+`attack:ATTCKShapesPrefixes` does in `attack:`.
+
 ## 3. Extension Namespaces
 
 | Extension | Namespace | Prefix | Since |
@@ -59,5 +74,5 @@ Unchanged from v1.0 (`http://kgcs.motherhacker.me/rules#`, prefix `rule:`).
 
 ---
 
-Namespace policy v1.2 is frozen once spec v1.2.0 is tagged. Session Q17
-(ATLAS module, ADR-0004) adds its namespace to this file before the tag.
+Namespace policy v1.2 is frozen once spec v1.2.0 is tagged. The ATLAS
+namespace (session Q17, ADR-0004) is the last v1.2 addition.

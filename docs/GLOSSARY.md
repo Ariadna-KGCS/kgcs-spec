@@ -21,6 +21,7 @@
 | **KEV** (v1.2) | Known exploited vulnerabilities catalog | CISA | catalog `2026.09.25` at the time of writing |
 | **EPSS** (v1.2) | Exploitation probability, daily | FIRST | model `v2026.06.15` |
 | **SSVC** (v1.2) | Stakeholder-specific vulnerability categorization decisions | CISA (ADP) via NVD `ssvcV203` | 2.0.3 |
+| **ATLAS** (v1.2) | Adversary tactics & techniques against AI-enabled systems (parallel matrix beside ATT&CK) | MITRE | release `2026.09` (format 6.0.0) at the time of writing |
 
 ---
 
@@ -200,6 +201,24 @@ The *Risk* term above (ACCEPT / MITIGATE / TRANSFER / AVOID) remains the
 organisation's own decision in the Risk extension; KEV, EPSS and SSVC are
 the published inputs it may cite, with date and provenance.
 
+### ATLAS (v1.2, ADR-0004)
+
+MITRE ATLAS is a **parallel matrix** beside ATT&CK for attacks on
+AI-enabled systems. It is not a hop of the causal chain: no CAPEC attack
+pattern implements an ATLAS technique, and no D3FEND, CAR, SHIELD or ENGAGE
+node attaches to one.
+
+- **AtlasTactic** (`AML.TA####`), **AtlasTechnique** (`AML.T####`),
+  **AtlasSubTechnique** (`AML.T####.###`), **AtlasMitigation**
+  (`AML.M####`). Key `atlasId`; `name` is not unique.
+- **Maturity** — ATLAS's evidence level for a technique: Feasible,
+  Demonstrated or Realized. Stored verbatim, never scored.
+- **ADAPTED_FROM** — an ATLAS technique that MITRE declares adapted from an
+  ATT&CK technique (source field `attack-reference`). The only edge between
+  ATLAS and another standard; it is provenance of the ATLAS object, not an
+  equivalence, and it carries the cited id and URL.
+- **Case studies** (`AML.CS####`) are not loaded in module v1.0.
+
 ## Causal Chain (Critical Invariant)
 
 ```text
@@ -276,6 +295,7 @@ Technique (ATT&CK Tactic/Technique)
 | CAPEC | Technique | `enables` | This attack pattern corresponds to this ATT&CK technique |
 | Technique | DataComponent | `detected_by` | This technique can be detected via this data component |
 | Technique | DefenseTechnique | `mitigated_by` | This technique can be mitigated by this defense |
+| AtlasTechnique | Technique | `adapted_from` (`ADAPTED_FROM`) | MITRE ATLAS declares this AI-system technique adapted from this ATT&CK technique (v1.2; the only ATLAS cross-standard edge) |
 
 ### Contextual (Extensions)
 
@@ -349,6 +369,7 @@ ThreatActor: "APT-X (HIGH confidence)"
 - FIRST EPSS: <https://www.first.org/epss/>
 - CISA SSVC: <https://www.cisa.gov/ssvc>
 - MITRE ATT&CK: <https://attack.mitre.org/>
+- MITRE ATLAS: <https://atlas.mitre.org/> (data: <https://github.com/mitre-atlas/atlas-data>)
 - MITRE CWE: <https://cwe.mitre.org/>
 - MITRE CAPEC: <https://capec.mitre.org/>
 - MITRE D3FEND: <https://d3fend.mitre.org/>

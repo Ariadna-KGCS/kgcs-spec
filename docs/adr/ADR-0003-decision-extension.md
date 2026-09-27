@@ -1,6 +1,6 @@
 # ADR-0003 — Decision extension: KEV, EPSS and SSVC adhered to Vulnerability
 
-**Status:** Proposed (2026-09-27) — becomes Accepted after HC's review of the open questions in the last section
+**Status:** Accepted (2026-09-27, HC)
 **Scope:** modelling of three published decision inputs in the KGCS graph: the CISA Known Exploited Vulnerabilities catalog (KEV), the FIRST Exploit Prediction Scoring System daily score (EPSS) and the CISA Stakeholder-Specific Vulnerability Categorization decision (SSVC v2.0.3) as republished by NVD in `metrics.ssvcV203[]`
 **Deciders:** Humbert Costas
 **Spec artifacts:** `ontology/extensions/decision-extension-v1.0.owl`, `shapes/decision.shacl.ttl`, `shapes/build.shacl.ttl` v1.2, `mappings/kev-to-owl-v1.0.md`, `mappings/epss-to-owl-v1.0.md`, `mappings/ssvc-to-owl-v1.0.md`, `mappings/mapping-coverage-matrix-v1.2.md`, `docs/namespace-policy-v1.2.md`, `contracts/agent-consumable-schema.md` (invariant 9), `contracts/agent-consumable-schema.json` (`definitions.KevEntryProperties`, `EpssScoreProperties`, `SsvcDecisionProperties`)

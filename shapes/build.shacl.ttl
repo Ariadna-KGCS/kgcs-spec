@@ -25,7 +25,9 @@
 # vocabulary: KEV (value = the catalog's catalogVersion, e.g. KEV=2026.09.25)
 # and EPSS (value = score date and model version, e.g.
 # EPSS=2026-09-27;model:v2026.06.15). SSVC needs no key: it is read from the
-# NVD CVE files and is covered by the CVE snapshot. The frozen OWL comment
+# NVD CVE files and is covered by the CVE snapshot. The ATLAS module
+# (ADR-0004) adds ATLAS (value = collection.version of the versioned YAML
+# loaded, e.g. ATLAS=2026.09; never the ATLAS-latest.yaml symlink). The frozen OWL comment
 # on build:source_snapshot lists the ten v1.0 sources; the pattern below is
 # the normative vocabulary.
 #
@@ -82,8 +84,8 @@ build:BuildMetadataShape
         sh:path build:source_snapshot ;
         sh:datatype xsd:string ;
         sh:minCount 1 ;
-        sh:pattern "^(CPE|CVE|CVSS|CWE|CAPEC|ATTCK|D3FEND|CAR|SHIELD|ENGAGE|KEV|EPSS)=.+$" ;
-        sh:message "BuildMetadata.sourceSnapshots values must be <SOURCE>=<snapshot> with SOURCE one of the ten KGCS standards or KEV / EPSS (v1.2)." ;
+        sh:pattern "^(CPE|CVE|CVSS|CWE|CAPEC|ATTCK|D3FEND|CAR|SHIELD|ENGAGE|KEV|EPSS|ATLAS)=.+$" ;
+        sh:message "BuildMetadata.sourceSnapshots values must be <SOURCE>=<snapshot> with SOURCE one of the ten KGCS standards or KEV / EPSS / ATLAS (v1.2)." ;
         sh:severity sh:Violation ;
     ] ;
 

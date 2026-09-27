@@ -414,6 +414,253 @@
           "sourceRole": "adp"
         }
       ]
+    },
+    "AtlasTacticProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0004). Graph-layer properties of an AtlasTactic node (MITRE ATLAS tactic). ATLAS is a parallel matrix beside ATT&CK, not a hop of the causal chain.",
+      "type": "object",
+      "required": [
+        "atlasId",
+        "name",
+        "description",
+        "createdDate",
+        "modifiedDate",
+        "matrixPosition"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "atlasId": {
+          "type": "string",
+          "pattern": "^AML\\.TA[0-9]{4}$",
+          "description": "Source id. Unique on the label."
+        },
+        "name": {
+          "type": "string",
+          "description": "Source name, verbatim. Not unique; never a key."
+        },
+        "description": {
+          "type": "string",
+          "description": "Source description, verbatim Markdown."
+        },
+        "createdDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Source created-date (YYYY-MM-DD string)."
+        },
+        "modifiedDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Source modified-date (YYYY-MM-DD string)."
+        },
+        "matrixPosition": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "position of the ATLAS-matrix sequences relationship (column in the matrix)."
+        }
+      },
+      "examples": [
+        {
+          "atlasId": "AML.TA0015",
+          "name": "Lateral Movement",
+          "description": "The adversary is trying to move through your AI environment.",
+          "createdDate": "2025-10-27",
+          "modifiedDate": "2025-11-05",
+          "matrixPosition": 12
+        }
+      ]
+    },
+    "AtlasTechniqueProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0004). Graph-layer properties of an AtlasTechnique (atlasId AML.T####) or AtlasSubTechnique (AML.T####.###) node. Not an ATT&CK Technique.",
+      "type": "object",
+      "required": [
+        "atlasId",
+        "name",
+        "description",
+        "createdDate",
+        "modifiedDate",
+        "maturity",
+        "platforms"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "atlasId": {
+          "type": "string",
+          "pattern": "^AML\\.T[0-9]{4}(\\.[0-9]{3})?$",
+          "description": "Source id; AML.T#### on AtlasTechnique, AML.T####.### on AtlasSubTechnique. Unique on each label."
+        },
+        "name": {
+          "type": "string",
+          "description": "Source name, verbatim. Not unique; never a key."
+        },
+        "description": {
+          "type": "string",
+          "description": "Source description, verbatim Markdown."
+        },
+        "createdDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Source created-date (YYYY-MM-DD string)."
+        },
+        "modifiedDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Source modified-date (YYYY-MM-DD string)."
+        },
+        "maturity": {
+          "type": "string",
+          "enum": [
+            "Feasible",
+            "Demonstrated",
+            "Realized"
+          ]
+        },
+        "platforms": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "Enterprise",
+              "Predictive AI",
+              "Generative AI",
+              "Agentic AI"
+            ]
+          }
+        }
+      },
+      "examples": [
+        {
+          "atlasId": "AML.T0091",
+          "name": "Use Alternate Authentication Material",
+          "description": "Adversaries may use alternate authentication material to move laterally within an AI environment.",
+          "createdDate": "2025-10-27",
+          "modifiedDate": "2026-05-27",
+          "maturity": "Realized",
+          "platforms": [
+            "Enterprise"
+          ]
+        }
+      ]
+    },
+    "AtlasMitigationProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0004). Graph-layer properties of an AtlasMitigation node. ATLAS mitigations MITIGATE ATLAS techniques only; not a D3FEND DefensiveTechnique.",
+      "type": "object",
+      "required": [
+        "atlasId",
+        "name",
+        "description",
+        "createdDate",
+        "modifiedDate",
+        "categories",
+        "lifecyclePhases"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "atlasId": {
+          "type": "string",
+          "pattern": "^AML\\.M[0-9]{4}$",
+          "description": "Source id. Unique on the label."
+        },
+        "name": {
+          "type": "string",
+          "description": "Source name, verbatim. Not unique; never a key."
+        },
+        "description": {
+          "type": "string",
+          "description": "Source description, verbatim Markdown."
+        },
+        "createdDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Source created-date (YYYY-MM-DD string)."
+        },
+        "modifiedDate": {
+          "type": "string",
+          "format": "date",
+          "description": "Source modified-date (YYYY-MM-DD string)."
+        },
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "Policy",
+              "Technical - AI",
+              "Technical - Cyber"
+            ]
+          }
+        },
+        "lifecyclePhases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "Business and Data Understanding",
+              "Data Preparation",
+              "AI Model Engineering",
+              "AI Model Evaluation",
+              "Deployment",
+              "Monitoring and Maintenance"
+            ]
+          }
+        }
+      },
+      "examples": [
+        {
+          "atlasId": "AML.M0019",
+          "name": "Control Access to AI Models and Data in Production",
+          "description": "Require users to verify their identities before accessing a production model.",
+          "createdDate": "2024-01-12",
+          "modifiedDate": "2026-07-31",
+          "categories": [
+            "Policy"
+          ],
+          "lifecyclePhases": [
+            "Deployment",
+            "Monitoring and Maintenance"
+          ]
+        }
+      ]
+    },
+    "AdaptedFromEdgeProperties": {
+      "$comment": "v1.2 (kgcs-spec 1.2.0, ADR-0004). Graph-layer properties of the (AtlasTechnique|AtlasSubTechnique)-[:ADAPTED_FROM]->(Technique|SubTechnique) edge: the provenance of the only edge between ATLAS and another standard. Written only where the ATLAS object carries attack-reference.",
+      "type": "object",
+      "required": [
+        "sourceField",
+        "attackReferenceId",
+        "attackReferenceUrl"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "sourceField": {
+          "type": "string",
+          "enum": [
+            "attack-reference"
+          ],
+          "description": "ATLAS field that declares the adaptation."
+        },
+        "attackReferenceId": {
+          "type": "string",
+          "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$",
+          "description": "attack-reference.id, verbatim. Equals the target's attackId unless a revoked target was remapped."
+        },
+        "attackReferenceUrl": {
+          "type": "string",
+          "pattern": "^https://attack\\.mitre\\.org/techniques/T[0-9]{4}(/[0-9]{3})?/?$",
+          "description": "attack-reference.url, verbatim (trailing slash not guaranteed)."
+        }
+      },
+      "examples": [
+        {
+          "sourceField": "attack-reference",
+          "attackReferenceId": "T1550.004",
+          "attackReferenceUrl": "https://attack.mitre.org/techniques/T1550/004"
+        }
+      ]
     }
   },
   "examples": [

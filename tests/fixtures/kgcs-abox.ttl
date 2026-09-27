@@ -28,6 +28,7 @@
 @prefix kev:    <http://www.motherhacker.me/kgcs/ontology/kev#> .
 @prefix epss:   <http://www.motherhacker.me/kgcs/ontology/epss#> .
 @prefix ssvc:   <http://www.motherhacker.me/kgcs/ontology/ssvc#> .
+@prefix atlas:  <http://www.motherhacker.me/kgcs/ontology/atlas#> .
 @prefix fx:     <urn:kgcs:fixture:> .
 
 # --- CPE ---------------------------------------------------------------------
@@ -195,6 +196,93 @@ fx:ta0002 a kgcs:Tactic ;
     attack:phaseName "execution" ;
     attack:domain "enterprise" .
 
+# ATT&CK targets of the ATLAS ADAPTED_FROM edges below (T1550 is enterprise
+# Defense Evasion and Lateral Movement; one tactic is enough here).
+
+fx:t1550 a kgcs:Technique ;
+    attack:attackId "T1550" ;
+    attack:name "Use Alternate Authentication Material" ;
+    attack:domain "enterprise" ;
+    attack:contains_by fx:ta0005 .
+
+fx:t1550-001 a attack:SubTechnique ;
+    attack:attackId "T1550.001" ;
+    attack:name "Application Access Token" ;
+    attack:domain "enterprise" ;
+    attack:subtechnique_of fx:t1550 .
+
+fx:ta0005 a kgcs:Tactic ;
+    attack:attackId "TA0005" ;
+    attack:phaseName "defense-evasion" ;
+    attack:domain "enterprise" .
+
+# --- ATLAS (atlas-ontology-v1.0.owl, ADR-0004) -------------------------------
+# A parallel matrix beside ATT&CK: nothing in the chain points at these nodes
+# and they point at nothing in the chain except through ADAPTED_FROM. Values
+# are verbatim from ATLAS release 2026.09 (dist/v6/ATLAS-2026.09.yaml),
+# descriptions shortened.
+
+fx:aml-ta0015 a atlas:AtlasTactic ;
+    atlas:atlasId "AML.TA0015" ;
+    atlas:name "Lateral Movement" ;
+    atlas:description "The adversary is trying to move through your AI environment." ;
+    atlas:createdDate "2025-10-27"^^xsd:date ;
+    atlas:modifiedDate "2025-11-05"^^xsd:date ;
+    atlas:matrixPosition 12 .
+
+fx:aml-t0091 a atlas:AtlasTechnique ;
+    atlas:atlasId "AML.T0091" ;
+    atlas:name "Use Alternate Authentication Material" ;
+    atlas:description "Adversaries may use alternate authentication material to move laterally within an AI environment." ;
+    atlas:createdDate "2025-10-27"^^xsd:date ;
+    atlas:modifiedDate "2026-05-27"^^xsd:date ;
+    atlas:maturity "Realized" ;
+    atlas:platforms "Enterprise" ;
+    atlas:part_of fx:aml-ta0015 ;
+    atlas:adapted_from fx:t1550 .
+
+fx:aml-t0091-000 a atlas:AtlasSubTechnique ;
+    atlas:atlasId "AML.T0091.000" ;
+    atlas:name "Application Access Token" ;
+    atlas:description "Adversaries may use stolen application access tokens to access AI services." ;
+    atlas:createdDate "2025-10-28"^^xsd:date ;
+    atlas:modifiedDate "2026-05-27"^^xsd:date ;
+    atlas:maturity "Realized" ;
+    atlas:platforms "Enterprise" ;
+    atlas:subtechnique_of fx:aml-t0091 ;
+    atlas:part_of fx:aml-ta0015 ;
+    atlas:adapted_from fx:t1550-001 .
+
+fx:aml-m0019 a atlas:AtlasMitigation ;
+    atlas:atlasId "AML.M0019" ;
+    atlas:name "Control Access to AI Models and Data in Production" ;
+    atlas:description "Require users to verify their identities before accessing a production model." ;
+    atlas:createdDate "2024-01-12"^^xsd:date ;
+    atlas:modifiedDate "2026-07-31"^^xsd:date ;
+    atlas:categories "Policy" ;
+    atlas:lifecyclePhases "Deployment" , "Monitoring and Maintenance" ;
+    atlas:mitigates fx:aml-t0091 , fx:aml-t0091-000 .
+
+# ADAPTED_FROM provenance: one statement per edge (source field attack-reference;
+# the AML.T0091 url has a trailing slash, the AML.T0091.001 one in the source
+# does not - both forms are valid).
+
+fx:af-aml-t0091 a atlas:AdaptedFromStatement ;
+    rdf:subject fx:aml-t0091 ;
+    rdf:predicate atlas:adapted_from ;
+    rdf:object fx:t1550 ;
+    atlas:sourceField "attack-reference" ;
+    atlas:attackReferenceId "T1550" ;
+    atlas:attackReferenceUrl "https://attack.mitre.org/techniques/T1550/" .
+
+fx:af-aml-t0091-000 a atlas:AdaptedFromStatement ;
+    rdf:subject fx:aml-t0091-000 ;
+    rdf:predicate atlas:adapted_from ;
+    rdf:object fx:t1550-001 ;
+    atlas:sourceField "attack-reference" ;
+    atlas:attackReferenceId "T1550.001" ;
+    atlas:attackReferenceUrl "https://attack.mitre.org/techniques/T1550/001/" .
+
 # --- Countermeasure branches -------------------------------------------------
 
 fx:d3-pa a kgcs:DefensiveTechnique ;
@@ -235,4 +323,4 @@ fx:build-1 a build:BuildMetadata ;
     build:pipeline_commit "b681e90" ;
     build:source_snapshot "CWE=4.20" , "CAPEC=3.9" , "D3FEND=1.3.0" ,
         "ATTCK=download:2026-09-06;modified-max:2026-08-04" , "CVE=2026-09-01T03:00:00Z" ,
-        "KEV=2026.09.25" , "EPSS=2026-09-27;model:v2026.06.15" .
+        "KEV=2026.09.25" , "EPSS=2026-09-27;model:v2026.06.15" , "ATLAS=2026.09" .

@@ -1,0 +1,19 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix atlas:  <http://www.motherhacker.me/kgcs/ontology/atlas#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# atlas.shacl AtlasSubTechniqueShape (SPARQL): parent atlasId is not the
+# sub-technique id without its .### segment.
+fx:aml-neg a atlas:AtlasSubTechnique ;
+    atlas:atlasId "AML.T0050.000" ;
+    atlas:name "Negative case technique" ;
+    atlas:description "Mutation individual for a negative case." ;
+    atlas:createdDate "2023-02-28"^^xsd:date ;
+    atlas:modifiedDate "2026-05-27"^^xsd:date ;
+    atlas:maturity "Realized" ;
+    atlas:platforms "Enterprise" ;
+    atlas:part_of fx:aml-ta0015 ;
+    atlas:subtechnique_of fx:aml-t0091 .

@@ -1,0 +1,601 @@
+# KGCS ATLAS SHACL Shapes v1.0
+#
+# Validates AtlasTactic, AtlasTechnique, AtlasSubTechnique and AtlasMitigation
+# nodes and the ADAPTED_FROM edge against the ATLAS module
+# (ontology/standards/atlas-ontology-v1.0.owl, ADR-0004).
+#
+# Source standard: MITRE ATLAS, mitre-atlas/atlas-data dist/v6/ATLAS-<release>.yaml
+# (format 6.0.0; verified on release 2026.09, mappings/atlas-to-owl-v1.0.md).
+# Enforcement level: STRICT (reject at ingest)
+#
+# Two invariants beyond field validation, both Hard Rule 2 (ATLAS is a
+# parallel matrix beside ATT&CK, not a hop of the chain):
+#
+#   CLOSED. The four node shapes are sh:closed: an ATLAS node may carry only
+#   its own datatype properties, the ATLAS-internal edges (PART_OF,
+#   SUBTECHNIQUE_OF, MITIGATES) and ADAPTED_FROM. No ATLAS -> D3FEND / CAR /
+#   SHIELD / ENGAGE / CWE edge can exist.
+#
+#   BOUNDARY. atlas:AtlasBoundaryShape rejects any edge INTO an ATLAS node
+#   unless it is an ATLAS-internal edge from an ATLAS node (or the rdf:subject
+#   of an ADAPTED_FROM statement). No CAPEC IMPLEMENTS, no ATT&CK
+#   SUBTECHNIQUE_OF / PART_OF can reach an ATLAS node.
+#
+# ADAPTED_FROM (AtlasTechnique | AtlasSubTechnique -> ATT&CK Technique |
+# SubTechnique) is the only cross-standard edge. It exists only where ATLAS
+# declares `attack-reference`, and it always carries that provenance
+# (atlas:AdaptedFromStatement, ADR-0002 reification pattern). Missing
+# provenance is a Violation: there are no legacy ADAPTED_FROM edges.
+#
+# Graph relationship types PART_OF and SUBTECHNIQUE_OF are shared with
+# ATT&CK and scoped by label; in RDF they are distinct properties
+# (atlas:part_of, atlas:subtechnique_of), so the ATT&CK shapes never see
+# ATLAS edges and vice versa.
+#
+# sh:closed lists rdf:type and owl:sameAs as ignored: the harness's OWL-RL
+# closure (tests/conftest.py, INFERENCE_MODE) asserts a reflexive owl:sameAs
+# on every node.
+#
+# Severity of SHACL-SPARQL constraints is read from the node shape
+# (shapes/README.md); the two Warning-level checks have their own shapes.
+
+@prefix sh:     <http://www.w3.org/ns/shacl#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix atlas:  <http://www.motherhacker.me/kgcs/ontology/atlas#> .
+
+# SPARQL prefix declarations for the constraints below (SHACL-SPARQL 1.0).
+atlas:ATLASShapesPrefixes
+    a owl:Ontology ;
+    sh:declare [
+        sh:prefix "atlas" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/atlas#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "attack" ;
+        sh:namespace "http://www.motherhacker.me/kgcs/ontology/attack#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "owl" ;
+        sh:namespace "http://www.w3.org/2002/07/owl#"^^xsd:anyURI ;
+    ] , [
+        sh:prefix "rdf" ;
+        sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# AtlasTactic (source `tactics`, AML.TA####)
+# ---------------------------------------------------------------------------
+
+atlas:AtlasTacticShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AtlasTactic ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    sh:property [
+        sh:path atlas:atlasId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^AML\\.TA\\d{4}$" ;
+        sh:message "AtlasTactic.atlasId must match AML.TA\\d{4} (e.g. AML.TA0015)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTactic must have exactly one name." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTactic must have exactly one description." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:createdDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTactic must have exactly one createdDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:modifiedDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTactic must have exactly one modifiedDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # matrixPosition: `position` of the ATLAS-matrix `sequences` relationship
+    sh:property [
+        sh:path atlas:matrixPosition ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minInclusive 1 ;
+        sh:message "AtlasTactic must have exactly one matrixPosition, an integer >= 1 (source: ATLAS-matrix sequences position)." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# AtlasTechnique (source `techniques` without `specializes`, AML.T####)
+# ---------------------------------------------------------------------------
+
+atlas:AtlasTechniqueShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AtlasTechnique ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    sh:property [
+        sh:path atlas:atlasId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^AML\\.T\\d{4}$" ;
+        sh:message "AtlasTechnique.atlasId must match AML.T\\d{4} (sub-techniques are AtlasSubTechnique)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTechnique must have exactly one name." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTechnique must have exactly one description." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:createdDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTechnique must have exactly one createdDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:modifiedDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasTechnique must have exactly one modifiedDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:maturity ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Feasible" "Demonstrated" "Realized" ) ;
+        sh:message "AtlasTechnique.maturity must be exactly one of Feasible, Demonstrated, Realized." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:platforms ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Enterprise" "Predictive AI" "Generative AI" "Agentic AI" ) ;
+        sh:message "AtlasTechnique.platforms must hold at least one of Enterprise, Predictive AI, Generative AI, Agentic AI." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # PART_OF (source `achieves`): at least one ATLAS tactic (120 of 120 in 2026.09)
+    sh:property [
+        sh:path atlas:part_of ;
+        sh:class atlas:AtlasTactic ;
+        sh:minCount 1 ;
+        sh:message "AtlasTechnique must be PART_OF at least one AtlasTactic (never an ATT&CK Tactic)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # ADAPTED_FROM: at most one ATT&CK Technique or SubTechnique
+    sh:property [
+        sh:path atlas:adapted_from ;
+        sh:maxCount 1 ;
+        sh:or ( [ sh:class attack:Technique ] [ sh:class attack:SubTechnique ] ) ;
+        sh:message "AtlasTechnique ADAPTED_FROM must target one ATT&CK Technique or SubTechnique (source attack-reference is single-valued)." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# AtlasSubTechnique (source `techniques` with `specializes`, AML.T####.###)
+# ---------------------------------------------------------------------------
+
+atlas:AtlasSubTechniqueShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AtlasSubTechnique ;
+    sh:severity sh:Violation ;    # read from the shape, not the SPARQL constraint
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    sh:property [
+        sh:path atlas:atlasId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^AML\\.T\\d{4}\\.\\d{3}$" ;
+        sh:message "AtlasSubTechnique.atlasId must match AML.T\\d{4}.\\d{3} (e.g. AML.T0091.000)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasSubTechnique must have exactly one name." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasSubTechnique must have exactly one description." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:createdDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasSubTechnique must have exactly one createdDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:modifiedDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasSubTechnique must have exactly one modifiedDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:maturity ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "Feasible" "Demonstrated" "Realized" ) ;
+        sh:message "AtlasSubTechnique.maturity must be exactly one of Feasible, Demonstrated, Realized." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:platforms ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Enterprise" "Predictive AI" "Generative AI" "Agentic AI" ) ;
+        sh:message "AtlasSubTechnique.platforms must hold at least one of Enterprise, Predictive AI, Generative AI, Agentic AI." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # SUBTECHNIQUE_OF (source `specializes`): exactly one ATLAS parent
+    sh:property [
+        sh:path atlas:subtechnique_of ;
+        sh:class atlas:AtlasTechnique ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasSubTechnique must have exactly one SUBTECHNIQUE_OF parent AtlasTechnique." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # PART_OF (source `achieves` on the sub-technique; 88 of 88 in 2026.09)
+    sh:property [
+        sh:path atlas:part_of ;
+        sh:class atlas:AtlasTactic ;
+        sh:minCount 1 ;
+        sh:message "AtlasSubTechnique must be PART_OF at least one AtlasTactic." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:adapted_from ;
+        sh:maxCount 1 ;
+        sh:or ( [ sh:class attack:Technique ] [ sh:class attack:SubTechnique ] ) ;
+        sh:message "AtlasSubTechnique ADAPTED_FROM must target one ATT&CK Technique or SubTechnique." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # the parent's atlasId is the sub-technique's id without its .### suffix
+    # (88 of 88 in 2026.09; the ATT&CK equivalent is a v1.2 candidate there)
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "SUBTECHNIQUE_OF parent's atlasId must be the sub-technique's atlasId without its last .### segment." ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this atlas:subtechnique_of ?value .
+                BIND (atlas:subtechnique_of AS ?path)
+                $this atlas:atlasId ?sid .
+                ?value atlas:atlasId ?pid .
+                FILTER (!STRSTARTS(?sid, CONCAT(?pid, ".")))
+            }
+        """ ;
+    ] .
+
+# A sub-technique's tactics are a subset of its parent's (0 exceptions in
+# 2026.09). Warning: the ATLAS schema does not promise it.
+atlas:AtlasSubTechniqueTacticSubsetShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AtlasSubTechnique ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "AtlasSubTechnique is PART_OF a tactic its parent AtlasTechnique is not PART_OF (never observed in the source; check the release)." ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this atlas:part_of ?value .
+                BIND (atlas:part_of AS ?path)
+                $this atlas:subtechnique_of ?parent .
+                FILTER NOT EXISTS { ?parent atlas:part_of ?value }
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# AtlasMitigation (source `mitigations`, AML.M####)
+# ---------------------------------------------------------------------------
+
+atlas:AtlasMitigationShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AtlasMitigation ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type owl:sameAs ) ;
+
+    sh:property [
+        sh:path atlas:atlasId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^AML\\.M\\d{4}$" ;
+        sh:message "AtlasMitigation.atlasId must match AML.M\\d{4} (e.g. AML.M0019)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:name ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasMitigation must have exactly one name." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:description ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasMitigation must have exactly one description." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:createdDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasMitigation must have exactly one createdDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:modifiedDate ;
+        sh:datatype xsd:date ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:message "AtlasMitigation must have exactly one modifiedDate (xsd:date)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:categories ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Policy" "Technical - AI" "Technical - Cyber" ) ;
+        sh:message "AtlasMitigation.categories must hold at least one of Policy, Technical - AI, Technical - Cyber." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:lifecyclePhases ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:in ( "Business and Data Understanding" "Data Preparation" "AI Model Engineering"
+                "AI Model Evaluation" "Deployment" "Monitoring and Maintenance" ) ;
+        sh:message "AtlasMitigation.lifecyclePhases must hold at least one of the six ATLAS lifecycle phases." ;
+        sh:severity sh:Violation ;
+    ] ;
+    # MITIGATES (source `mitigates`): at least one ATLAS technique (40 of 40)
+    sh:property [
+        sh:path atlas:mitigates ;
+        sh:minCount 1 ;
+        sh:or ( [ sh:class atlas:AtlasTechnique ] [ sh:class atlas:AtlasSubTechnique ] ) ;
+        sh:message "AtlasMitigation must MITIGATE at least one AtlasTechnique or AtlasSubTechnique, and only those." ;
+        sh:severity sh:Violation ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# ADAPTED_FROM provenance
+#
+# Graph: (a:AtlasTechnique|AtlasSubTechnique)-[:ADAPTED_FROM {sourceField,
+# attackReferenceId, attackReferenceUrl}]->(t:Technique|SubTechnique).
+# RDF: one atlas:AdaptedFromStatement per atlas:adapted_from triple.
+# ---------------------------------------------------------------------------
+
+atlas:AdaptedFromStatementShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AdaptedFromStatement ;
+    sh:severity sh:Violation ;    # read from the shape, not the SPARQL constraints
+
+    sh:property [
+        sh:path rdf:subject ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:or ( [ sh:class atlas:AtlasTechnique ] [ sh:class atlas:AtlasSubTechnique ] ) ;
+        sh:message "ADAPTED_FROM statement must have exactly one rdf:subject, an AtlasTechnique or AtlasSubTechnique." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path rdf:predicate ;
+        sh:hasValue atlas:adapted_from ;
+        sh:maxCount 1 ;
+        sh:message "ADAPTED_FROM statement must have rdf:predicate atlas:adapted_from." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path rdf:object ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:or ( [ sh:class attack:Technique ] [ sh:class attack:SubTechnique ] ) ;
+        sh:message "ADAPTED_FROM statement must have exactly one rdf:object, an ATT&CK Technique or SubTechnique." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:sourceField ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "attack-reference" ) ;
+        sh:message "ADAPTED_FROM.sourceField must be 'attack-reference' (the only ATLAS field that declares an adaptation from ATT&CK)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:attackReferenceId ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^T\\d{4}(\\.\\d{3})?$" ;
+        sh:message "ADAPTED_FROM.attackReferenceId must be the verbatim attack-reference.id (T#### or T####.###)." ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path atlas:attackReferenceUrl ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^https://attack\\.mitre\\.org/techniques/T\\d{4}(/\\d{3})?/?$" ;
+        sh:message "ADAPTED_FROM.attackReferenceUrl must be the verbatim attack-reference.url (https://attack.mitre.org/techniques/T####[/###][/])." ;
+        sh:severity sh:Violation ;
+    ] ;
+
+    # the cited URL names the cited id
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "ADAPTED_FROM.attackReferenceUrl does not name attackReferenceId." ;
+        sh:select """
+            SELECT $this WHERE {
+                $this atlas:attackReferenceId ?id ; atlas:attackReferenceUrl ?u .
+                FILTER (!REGEX(?u, CONCAT("/techniques/", REPLACE(?id, "[.]", "/"), "/?$")))
+            }
+        """ ;
+    ] ;
+
+    # one statement per (ATLAS technique, ATT&CK technique) edge
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "Exactly one ADAPTED_FROM statement per edge: another statement reifies the same pair." ;
+        sh:select """
+            SELECT $this ?value WHERE {
+                $this rdf:subject ?a ; rdf:object ?t .
+                ?value a atlas:AdaptedFromStatement ; rdf:subject ?a ; rdf:object ?t .
+                FILTER (?value != $this)
+            }
+        """ ;
+    ] ;
+
+    # the statement annotates an edge that exists
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "ADAPTED_FROM statement reifies an atlas:adapted_from triple that is not in the graph." ;
+        sh:select """
+            SELECT $this WHERE {
+                $this rdf:subject ?a ; rdf:object ?t .
+                FILTER NOT EXISTS { ?a atlas:adapted_from ?t }
+            }
+        """ ;
+    ] .
+
+# Every ADAPTED_FROM edge carries its provenance. Violation (unlike
+# CAUSED_BY): ADAPTED_FROM is new in v1.2, so no legacy edge exists.
+atlas:AdaptedFromProvenanceShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf atlas:adapted_from ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "ADAPTED_FROM edge without provenance (sourceField / attackReferenceId / attackReferenceUrl): the edge exists only where ATLAS declares attack-reference." ;
+        sh:select """
+            SELECT $this ?value ?path WHERE {
+                $this atlas:adapted_from ?value .
+                BIND (atlas:adapted_from AS ?path)
+                FILTER NOT EXISTS {
+                    ?st a atlas:AdaptedFromStatement ; rdf:subject $this ; rdf:object ?value .
+                }
+            }
+        """ ;
+    ] .
+
+# The target's attackId equals the cited id, except after a revoked-by remap
+# (attck-to-owl-v1.0.md v1.1 bridge rule). Warning: a remap is legitimate.
+atlas:AdaptedFromReferenceAgreementShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AdaptedFromStatement ;
+    sh:severity sh:Warning ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "ADAPTED_FROM target attackId differs from the cited attack-reference.id (legitimate only after a revoked-by remap; the loader must report it)." ;
+        sh:select """
+            SELECT $this WHERE {
+                $this rdf:object ?t ; atlas:attackReferenceId ?id .
+                ?t attack:attackId ?tid .
+                FILTER (?tid != ?id)
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------------------
+# Boundary guard: nothing outside ATLAS points INTO an ATLAS node
+#
+# Allowed incoming triples: atlas:part_of / atlas:subtechnique_of /
+# atlas:mitigates from an ATLAS node, rdf:subject from an
+# AdaptedFromStatement, and the harness's reflexive owl:sameAs. Anything
+# else - CAPEC IMPLEMENTS, ATT&CK SUBTECHNIQUE_OF / PART_OF, D3FEND edges -
+# is a Violation (Hard Rule 2: ATLAS does not extend the chain).
+# ---------------------------------------------------------------------------
+
+atlas:AtlasBoundaryShape
+    a sh:NodeShape ;
+    sh:targetClass atlas:AtlasTactic , atlas:AtlasTechnique , atlas:AtlasSubTechnique , atlas:AtlasMitigation ;
+    sh:severity sh:Violation ;
+    sh:sparql [
+        a sh:SPARQLConstraint ;
+        sh:prefixes atlas:ATLASShapesPrefixes ;
+        sh:message "Edge into an ATLAS node from outside ATLAS: ATLAS is a parallel matrix, not a hop of the chain (no CAPEC -> ATLAS, no ATT&CK -> ATLAS; ADR-0004 D3)." ;
+        sh:select """
+            SELECT $this ?path WHERE {
+                ?s ?path $this .
+                FILTER (?path != owl:sameAs)
+                FILTER (!(
+                    (?path IN (atlas:part_of, atlas:subtechnique_of, atlas:mitigates)
+                        && EXISTS { ?s a ?c .
+                                    FILTER (?c IN (atlas:AtlasTechnique, atlas:AtlasSubTechnique, atlas:AtlasMitigation)) })
+                    || (?path = rdf:subject && EXISTS { ?s a atlas:AdaptedFromStatement })
+                ))
+            }
+        """ ;
+    ] .

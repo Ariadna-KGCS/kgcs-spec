@@ -148,7 +148,7 @@ ext:assesses a owl:ObjectProperty ;
     rdfs:range kgcs:Vulnerability .   # reference core classes, never redefine them
 ```
 
-The extension namespace must be added by a namespace-policy successor (`docs/namespace-policy-v1.2.md` is the current one; `asset:`, `build:` and `decision:` are the registered extension namespaces, and `kev:`, `epss:`, `ssvc:` the decision-layer standard namespaces). A node that annotates one class of the chain without being a hop of it (Consequence, the decision leaves) should be **closed** in SHACL and guarded against foreign incoming edges — see `shapes/decision.shacl.ttl` and ADR-0003 for the pattern.
+The extension namespace must be added by a namespace-policy successor (`docs/namespace-policy-v1.2.md` is the current one; `asset:`, `build:` and `decision:` are the registered extension namespaces, and `kev:`, `epss:`, `ssvc:` the decision-layer standard namespaces, `atlas:` the ATLAS standard namespace). A node that annotates one class of the chain without being a hop of it (Consequence, the decision leaves) should be **closed** in SHACL and guarded against foreign incoming edges — see `shapes/decision.shacl.ttl` and ADR-0003 for the pattern. A standard that sits *beside* the chain (MITRE ATLAS) uses the same two mechanisms at matrix level — closed node shapes plus a boundary guard on incoming edges — and reaches the chain only through a source-declared, provenance-carrying edge (`shapes/atlas.shacl.ttl`, ADR-0004).
 
 ### Step 2: Create SHACL Shapes
 
@@ -269,5 +269,6 @@ If future work adds an LLM for richer natural-language understanding, it must si
 - [namespace-policy-v1.2.md](namespace-policy-v1.2.md) — Registered namespaces
 - [adr/ADR-0001-consequence-subnodes.md](adr/ADR-0001-consequence-subnodes.md) — Worked example of a versioned module decision
 - [adr/ADR-0003-decision-extension.md](adr/ADR-0003-decision-extension.md) — Worked example of an adhered-leaf extension (closed shapes, no chain edges, dated append-only scores)
+- [adr/ADR-0004-atlas-module.md](adr/ADR-0004-atlas-module.md) — Worked example of a parallel standard beside the chain (own namespace, closed shapes, boundary guard, one provenance-carrying bridge edge)
 - `../shapes/README.md` — Shape conventions, alignment modules, inference mode
 - Example loaders: `etl/load_cpe.py`, `etl/load_cve.py` (in `kgcs-pipeline`)

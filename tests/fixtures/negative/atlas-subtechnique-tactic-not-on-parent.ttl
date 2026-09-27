@@ -1,0 +1,18 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix atlas:  <http://www.motherhacker.me/kgcs/ontology/atlas#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# atlas.shacl AtlasSubTechniqueTacticSubsetShape (Warning): the sub-technique
+# achieves a tactic its parent does not (never observed in release 2026.09).
+fx:aml-ta0013 a atlas:AtlasTactic ;
+    atlas:atlasId "AML.TA0013" ;
+    atlas:name "Credential Access" ;
+    atlas:description "Mutation individual for a negative case." ;
+    atlas:createdDate "2023-10-25"^^xsd:date ;
+    atlas:modifiedDate "2023-10-25"^^xsd:date ;
+    atlas:matrixPosition 10 .
+
+fx:aml-t0091-000 atlas:part_of fx:aml-ta0013 .

@@ -4,7 +4,7 @@ All notable changes to the KGCS standard. Consumers (`kgcs-pipeline`, `kgcs-serv
 
 ## [Unreleased]
 
-## [1.2.0] — unreleased (tag set by session Q17 once the ATLAS module is on the branch)
+## [1.2.0] — unreleased (decision extension + ATLAS module on the branch; annotated local tag after HC reviews the diff)
 
 Second minor release on top of v1.1.0. No frozen `*-v1.0.owl` file is modified and no term is added to a frozen namespace. The response envelope (`contracts/*.json` `version: "1.0"`) is unchanged; every contract change is additive.
 
@@ -37,6 +37,35 @@ Second minor release on top of v1.1.0. No frozen `*-v1.0.owl` file is modified a
 - EPSS daily history back-fill for `kgcs-v12` — Open question 3 (load parameter, not a mapping change).
 - A `docs/decision-extension-ontology-v1.0.md` prose spec in the style of the asset extension; ADR-0003 and the three mapping docs carry the design for now.
 - SHACL check that `SsvcDecision.sourceRole` agrees with `source` against the declared ADP list (same gap as ADR-0002's role/source agreement; loader rule).
+
+### Added — ATLAS module (session Q17, ADR-0004)
+
+- **ADR-0004 — ATLAS module: a parallel matrix beside ATT&CK, bridged only by ADAPTED_FROM** (`docs/adr/ADR-0004-atlas-module.md`, *Proposed* until HC answers its six open questions). MITRE ATLAS (AI-enabled systems) enters in its own namespace as a matrix beside ATT&CK. It does not extend the causal chain: no CAPEC → ATLAS, no ATLAS → D3FEND / CAR / SHIELD / ENGAGE. The only cross-standard edge is `ADAPTED_FROM` (ATLAS technique → ATT&CK technique), written only where the source declares it and carrying that source field as provenance.
+- **Source pre-check** (2026-09-27, `mitre-atlas/atlas-data`): `dist/ATLAS-latest.yaml` is a symlink to `dist/v6/ATLAS-2026.09.yaml` (format 6.0.0, release 2026.09 of 2026-09-15, not 2026.05 as planned). `stix-atlas.json` is a release asset, not a `dist/` file; the `atlas-navigator-data` copy is stale. Counts: 16 tactics, 120 techniques, 88 sub-techniques (expressed by `specializes`, parent = id prefix, 88 of 88), 40 mitigations, 73 case studies; relationships `achieves` 225, `specializes` 88, `mitigates` 361, `employs` 665, `sequences` 16. **The adaptation field is `attack-reference` `{id, url}`**: on 44 techniques (31 top-level, 13 sub; 39 distinct ATT&CK targets), 14 tactics and 4 mitigations; STIX `external_references[source_name=mitre-attack]` (62). STIX counts equal the YAML counts.
+- **ATLAS module v1.0** (`ontology/standards/atlas-ontology-v1.0.owl`, namespace `atlas:`): classes `atlas:AtlasTactic`, `atlas:AtlasTechnique`, `atlas:AtlasSubTechnique` (not a subclass of `AtlasTechnique`), `atlas:AtlasMitigation` (pairwise disjoint and disjoint with `kgcs:Technique`, `kgcs:Tactic`, `attack:SubTechnique`, `kgcs:AttackPattern`, `kgcs:DefensiveTechnique`), `atlas:AdaptedFromStatement` (⊑ `rdf:Statement`, the ADR-0002 edge-property pattern); object properties `atlas:part_of` (graph `PART_OF`, ATLAS-scoped), `atlas:subtechnique_of` (graph `SUBTECHNIQUE_OF`, ATLAS-scoped, functional), `atlas:mitigates` (graph `MITIGATES`), `atlas:adapted_from` (graph `ADAPTED_FROM`, range `attack:Technique`), no inverses and no alignment to ATT&CK / Core terms; 13 datatype properties (`atlasId`, `name`, `description`, `createdDate`, `modifiedDate`, `matrixPosition`, `maturity`, `platforms`, `categories`, `lifecyclePhases`, and the edge provenance `sourceField`, `attackReferenceId`, `attackReferenceUrl`).
+- `shapes/atlas.shacl.ttl` v1.0: nine node shapes. The four label shapes are **closed**, with id patterns (`AML.TA####`, `AML.T####`, `AML.T####.###`, `AML.M####`) and closed vocabularies (`maturity`, `platforms`, `categories`, `lifecyclePhases`); `PART_OF` minCount 1, `SUBTECHNIQUE_OF` exactly 1 with the parent-id-prefix check (SPARQL); `atlas:AtlasSubTechniqueTacticSubsetShape` (Warning). `atlas:AdaptedFromStatementShape`, `atlas:AdaptedFromProvenanceShape` (an ADAPTED_FROM edge without provenance is a Violation) and `atlas:AdaptedFromReferenceAgreementShape` (Warning: the target differs from the cited id, legitimate only after a revoked-by remap). `atlas:AtlasBoundaryShape` rejects any edge into an ATLAS node from outside ATLAS.
+- `shapes/build.shacl.ttl` v1.2: `sourceSnapshots` vocabulary also gains `ATLAS` (`ATLAS=<collection.version>`, e.g. `ATLAS=2026.09`, from the versioned file, never the `latest` symlink).
+- `mappings/atlas-to-owl-v1.0.md`: sources with SHA-256, full source profile, entity / field / relationship tables with STIX equivalents and expected counts, transformation rules, post-load Cypher for session Q18. **ADAPTED_FROM resolution on `kgcs-v11`** (read-only, 2026-09-27): 38 of 39 distinct targets exist (30 `Technique`, 8 `SubTechnique`, all enterprise); `T1656` (Impersonation, cited by `AML.T0073`) is absent from the loaded ATT&CK bundles, so 43 of 44 edges resolve.
+- `mappings/mapping-coverage-matrix-v1.2.md`: ATLAS section, `ATLAS` build-metadata rows, seven Exclusions rows (case studies and `employs`, tactic and mitigation `attack-reference`, `references` / `uuid` / per-edge descriptions, any CAPEC → ATLAS or ATLAS → defence edge, STIX / navigator copies), audit row (0 undeclared terms), ETL test priority 11.
+- `docs/namespace-policy-v1.2.md`: registers `atlas:`.
+- `contracts/agent-consumable-schema.md`: labels `AtlasTactic`, `AtlasTechnique`, `AtlasSubTechnique`, `AtlasMitigation`; relationships `PART_OF` / `SUBTECHNIQUE_OF` (ATLAS-scoped, label qualification required), `MITIGATES`, `ADAPTED_FROM` with its three edge properties; unique `atlasId` per label; invariant 10 (ATLAS is not reachable from the chain; `ADAPTED_FROM` is the only exit and is named in `provenance`). `contracts/agent-consumable-schema.json`: `definitions.AtlasTacticProperties`, `AtlasTechniqueProperties`, `AtlasMitigationProperties`, `AdaptedFromEdgeProperties` (additive; envelope unchanged; examples validated).
+- Fixtures: `kgcs-abox.ttl` gains the ATLAS individuals `aml-ta0015`, `aml-t0091`, `aml-t0091-000`, `aml-m0019` (verbatim 2026.09 values), their two `ADAPTED_FROM` statements, the ATT&CK targets `t1550`, `t1550-001`, `ta0005`, and `ATLAS=2026.09`. 17 negative cases (`atlas-*`, `capec-implements-atlas`, `attack-subtechnique-of-atlas`), at least one per new shape, pinned in `manifest.json`. Harness: 151 tests, 54 negative cases (37 → 54).
+- `docs/GLOSSARY.md` (ATLAS section, `ADAPTED_FROM` row), `shapes/README.md`, `mappings/README.md`, `README.md`, `docs/EXTENDING.md` updated.
+
+### Upgrade notes for consumers (ATLAS module)
+
+- No existing shape becomes stricter: the new shapes target only the ATLAS classes, `AdaptedFromStatement` and subjects of `atlas:adapted_from`. A v1.1 graph validates unchanged.
+- **Unqualified `PART_OF` / `SUBTECHNIQUE_OF` counts change** once ATLAS is loaded (+225 / +88 on release 2026.09). Every count, export or equivalence check of these relationship types must qualify both endpoint labels. The snapshot-v12 chain-equivalence gate depends on this.
+- **`kgcs-pipeline` work implied by this section** (session Q18, none of it done here): downloader `mitre_atlas` (versioned YAML, pinned release); `load_atlas.py` after `load_attck.py` (MERGE on `atlasId` per label; `ADAPTED_FROM` with the shared revoked / deprecated / unresolved bridge rule and its counts); unique constraints on `atlasId`; `BuildMetadata` `ATLAS=`; post-load checks in `atlas-to-owl-v1.0.md`. **The chain loaders must show an empty diff.**
+- `kgcs-server`: ATLAS is a separate entry point; a template may cross to ATT&CK only through `ADAPTED_FROM` and must name that hop in `provenance`.
+
+### Not implemented (ATLAS module)
+
+- ATLAS case studies (`AtlasCaseStudy`, `EMPLOYS` with procedure-step metadata): candidate module, own ADR (ADR-0004 D5, Open question 4).
+- `ADAPTED_FROM` from `AtlasTactic` to ATT&CK `Tactic` (14 source references): ADR-0004 Open question 3.
+- ATLAS mitigation `attack-reference` (4): no ATT&CK mitigation class in KGCS.
+- Alternative edge names `ACHIEVES` / `SPECIALIZES` instead of the label-scoped `PART_OF` / `SUBTECHNIQUE_OF`: ADR-0004 Open question 1.
+- The `T1656` gap (ATT&CK technique cited by ATLAS but absent from the `kgcs-v11` ATT&CK load): a finding for the ATT&CK loader / bundle refresh, outside this module (Open question 6).
 
 ## [1.1.0] — 2026-09-26
 

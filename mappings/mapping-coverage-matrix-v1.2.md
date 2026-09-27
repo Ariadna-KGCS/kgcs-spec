@@ -4,8 +4,10 @@ Purpose: quick audit view of schema-to-OWL mapping coverage for ETL implementati
 
 Supersedes `mapping-coverage-matrix-v1.1.md` (kept frozen). v1.2 adds the
 decision extension (ADR-0003: CISA KEV, FIRST EPSS, CISA SSVC via NVD
-`ssvcV203`), the two new build-metadata keys, and an explicit **Exclusions**
-table naming what is deliberately not mapped. Every v1.1 row is carried
+`ssvcV203`), the ATLAS module (ADR-0004: MITRE ATLAS as a parallel matrix
+beside ATT&CK, bridged only by `ADAPTED_FROM`), the three new build-metadata
+keys (`KEV`, `EPSS`, `ATLAS`), and an explicit **Exclusions** table naming
+what is deliberately not mapped. Every v1.1 row is carried
 over unchanged unless marked *(v1.2)*; the loader status of the v1.1 rows
 was re-read from the v1.1.0 release and the `kgcs-v11` load of 2026-09-27
 where noted.
@@ -198,6 +200,35 @@ vocabulary or to undeclared `attack:` terms are marked accordingly.
 | `description`, `created`, `modified`, `lang`, `labels` | yes/no | `dct:description`, `dct:created`, `dct:modified`, `dct:language`, `dct:subject` | external | not KGCS terms; unconstrained by shapes |
 | `x_mitre_data_sources`, `x_mitre_data_components`, `x_mitre_detection`, `granular_markings`, `extensions` | no | `attack:dataSource`, `attack:dataComponent`, `attack:detection`, `attack:granularMarkings`, `attack:extensions` | planned | cited by v1.0 rows, declared by no OWL module (classes `attack:DataSource` / `attack:DataComponent` exist; the properties do not) |
 
+## ATLAS (`atlas-ontology-v1.0.owl`, v1.2, ADR-0004) *(v1.2)*
+
+MITRE ATLAS as a parallel matrix beside ATT&CK, outside the causal chain;
+the only cross-standard edge is `ADAPTED_FROM` (ATLAS → ATT&CK technique).
+Source of record: `mitre-atlas/atlas-data` `dist/v6/ATLAS-2026.09.yaml`
+(format 6.0.0, release 2026.09, verified 2026-09-27); field-by-field detail
+and source profile in `atlas-to-owl-v1.0.md`. Loader: `load_atlas.py`
+(session Q18), after `load_attck.py`.
+
+| Source field | Required in Source | Target OWL Term(s) | Status | Notes |
+| --- | --- | --- | --- | --- |
+| `tactics.<id>` | yes | `atlas:AtlasTactic` | planned (loader) | graph `AtlasTactic`; 16 |
+| `techniques.<id>` without `specializes` | yes | `atlas:AtlasTechnique` | planned (loader) | graph `AtlasTechnique`; 120 |
+| `techniques.<id>` with `specializes` | yes | `atlas:AtlasSubTechnique` | planned (loader) | graph `AtlasSubTechnique`; 88; not a subclass of `AtlasTechnique` |
+| `mitigations.<id>` | yes | `atlas:AtlasMitigation` | planned (loader) | graph `AtlasMitigation`; 40 |
+| `id` | yes | `atlas:atlasId` | planned (loader) | `AML.TA####`, `AML.T####`, `AML.T####.###`, `AML.M####`; unique per label |
+| `name`, `description` | yes | `atlas:name`, `atlas:description` | planned (loader) | names not unique |
+| `created-date`, `modified-date` | yes | `atlas:createdDate`, `atlas:modifiedDate` | planned (loader) | `xsd:date`; graph strings `YYYY-MM-DD` |
+| `maturity` | yes (techniques) | `atlas:maturity` | planned (loader) | `Feasible` \| `Demonstrated` \| `Realized`; not in STIX |
+| `platforms[]` | yes (techniques) | `atlas:platforms` | planned (loader) | `Enterprise` \| `Predictive AI` \| `Generative AI` \| `Agentic AI` |
+| `categories[]`, `lifecycle-phases[]` | yes (mitigations) | `atlas:categories`, `atlas:lifecyclePhases` | planned (loader) | closed vocabularies (3 / 6 values) |
+| relationship `sequences.position` | yes | `atlas:matrixPosition` | planned (loader) | on `AtlasTactic`, 1–16; no matrix node |
+| relationship `achieves` | yes | `atlas:part_of` | planned (loader) | graph `PART_OF`, ATLAS-scoped by label; 225 (131 techniques + 94 sub-techniques) |
+| relationship `specializes` | yes (sub-techniques) | `atlas:subtechnique_of` | planned (loader) | graph `SUBTECHNIQUE_OF`, ATLAS-scoped; 88; parent id = id prefix |
+| relationship `mitigates` | yes | `atlas:mitigates` | planned (loader) | graph `MITIGATES` (mitigation → technique); 361 |
+| `attack-reference` on techniques / sub-techniques | no (44 of 208) | `atlas:adapted_from`, `atlas:AdaptedFromStatement`, `atlas:sourceField`, `atlas:attackReferenceId`, `atlas:attackReferenceUrl` | planned (loader) | graph `ADAPTED_FROM {sourceField, attackReferenceId, attackReferenceUrl}` → `Technique` / `SubTechnique`; v1.1 bridge rule (revoked remap, deprecated / unresolved dropped and counted); 43 of 44 resolve on `kgcs-v11` (`T1656` absent) |
+| `attack-reference` on tactics / mitigations | no (14 / 4) | none | excluded | see Exclusions |
+| `case-studies`, relationship `employs` | — | none | excluded | candidate module (ADR-0004 D5) |
+
 ## D3FEND
 
 | Source Field | Required in Source | Target OWL Term(s) | Status | Notes |
@@ -251,6 +282,7 @@ update)*.
 | per-source download snapshot | yes | `build:source_snapshot` | implemented | `<SOURCE>=<snapshot>`, at most one value per SOURCE (`build.shacl.ttl` v1.1) |
 | KEV catalog version | yes (v1.2) | `build:source_snapshot` | planned (loader) *(v1.2)* | `KEV=<catalogVersion>`, e.g. `KEV=2026.09.25` |
 | EPSS score date + model | yes (v1.2) | `build:source_snapshot` | planned (loader) *(v1.2)* | `EPSS=<scoreDate>;model:<modelVersion>`, e.g. `EPSS=2026-09-27;model:v2026.06.15`; SSVC has no key (covered by `CVE=`) |
+| ATLAS release | yes (v1.2) | `build:source_snapshot` | planned (loader) *(v1.2)* | `ATLAS=<collection.version>`, e.g. `ATLAS=2026.09` (ADR-0004 D6) |
 
 Snapshot value per source: the exact release loaded, taken from the source
 itself wherever the source states it. Otherwise it is the download instant
@@ -266,6 +298,7 @@ recorded by the downloader.
 | `CAR`, `SHIELD`, `ENGAGE` | release tag if any, else repository commit or download date | `ENGAGE=1.0` |
 | `KEV` *(v1.2)* | file `catalogVersion` | `KEV=2026.09.25` |
 | `EPSS` *(v1.2)* | header `score_date` (date part) and `model_version` | `EPSS=2026-09-27;model:v2026.06.15` |
+| `ATLAS` *(v1.2)* | `collection.version` of the versioned YAML loaded (never the `ATLAS-latest.yaml` symlink) | `ATLAS=2026.09` |
 
 The frozen OWL comment on `build:source_snapshot` enumerates the ten v1.0
 sources; the `sh:pattern` in `build.shacl.ttl` v1.2 is the normative
@@ -274,8 +307,8 @@ vocabulary (comment fix = OWL v1.1 candidate, same register as
 
 ## Exclusions (v1.2) — deliberately not mapped
 
-Everything in this table was considered for the decision layer and left
-out on purpose. A row leaves this table only through an ADR.
+Everything in this table was considered for the decision layer or the ATLAS
+module and left out on purpose. A row leaves this table only through an ADR.
 
 | Item | Why excluded | Where it may come back |
 | --- | --- | --- |
@@ -292,6 +325,12 @@ out on purpose. A row leaves this table only through an ADR.
 | SSVC optional fields `computed`, `decisionTree`, `decisionTreeUrl`, `generator`, `$schema` | Absent from every NVD entry verified (85,454 entries) | If NVD starts publishing them |
 | SSVC decision-tree outcome (Track / Track\* / Attend / Act) | Not published by NVD; deriving it would be inference in KGCS | Never in Core; a consumer may compute it from the three stored points |
 | Any derived exploitability / priority score | Would introduce probabilistic or decision semantics into Core | Never (ADR-0003 D2) |
+| ATLAS case studies (`AML.CS####`, 73) and `employs` (665, with `tactic` / `step-id` / `leads-to`) | Incidents and exercises, the ATLAS analogue of ATT&CK Groups/Campaigns (not loaded either); not in the card's v1.0 scope | Candidate `AtlasCaseStudy` module, own ADR (ADR-0004 D5, Open question 4) |
+| ATLAS `attack-reference` on tactics (14) | The v1.0 bridge is technique-only; all 14 targets are enterprise tactics | ADR-0004 Open question 3 |
+| ATLAS `attack-reference` on mitigations (4: `M1044`, `M1041`, `M1045`, `M1017`) | KGCS has no ATT&CK mitigation (`course-of-action`) class: no target | Only if ATT&CK mitigations enter KGCS |
+| ATLAS `references[]`, `uuid`, `mitigates[].description`, `collection` / `matrix` objects | Bibliography, surrogate ids and per-edge prose; `collection.version` goes to `BuildMetadata` | — |
+| Any CAPEC → ATLAS or ATLAS → D3FEND / CAR / SHIELD / ENGAGE / CWE edge | Declared by no source; would make ATLAS a hop of the chain (Hard Rule 2) | Never without a source that declares it and an ADR |
+| `stix-atlas.json` as source of record; the `atlas-navigator-data` copy | STIX lacks `maturity`; the navigator copy is stale (collection 0.1) | STIX release asset stays a cross-check |
 
 ## Audit — terms cited by mapping docs but declared by no OWL module
 
@@ -299,7 +338,10 @@ Scripted 2026-09-27 over every `` `prefix:term` `` in the new v1.2 docs
 (`kev-to-owl-v1.0.md` 19 terms, `epss-to-owl-v1.0.md` 13, `ssvc-to-owl-v1.0.md`
 15, `docs/adr/ADR-0003-decision-extension.md` 13,
 `contracts/agent-consumable-schema.md` 10) against the union of
-`ontology/**/*.owl` (19 modules after v1.2): **0 undeclared**. The v1.1 rows
+`ontology/**/*.owl` (19 modules after v1.2): **0 undeclared**. The ATLAS
+docs (`atlas-to-owl-v1.0.md` 22 terms, ADR-0004 18 OWL terms) were audited
+the same way on 2026-09-27 against all 22 `.owl` files present after the
+ATLAS module: **0 undeclared**. The v1.1 rows
 below are unchanged (design intent in the v1.0 mapping docs that never
 reached an OWL module; each is "planned" until a versioned module declares
 it).
@@ -314,6 +356,7 @@ it).
 | `shield-to-owl-v1.0.md` | 17 | `shield:attackTacticId`, `shield:attackTechniqueId`, `shield:mapToAttack` |
 | `mapping-coverage-matrix-v1.0.md` | 48 | `attack:dataComponent`, `attack:dataSource`, `attack:detection`, `attack:extensions`, `attack:granularMarkings` |
 | `kev-to-owl-v1.0.md`, `epss-to-owl-v1.0.md`, `ssvc-to-owl-v1.0.md` *(v1.2)* | 19 / 13 / 15 | none |
+| `atlas-to-owl-v1.0.md`, `docs/adr/ADR-0004-atlas-module.md` *(v1.2)* | 22 / 18 (ADR also names 6 SHACL shapes, not OWL terms) | none |
 | all other mapping docs | — | none |
 
 ## ETL Test Priorities
@@ -328,4 +371,5 @@ it).
 8. `CAUSED_BY` count unchanged on the same raw data (331,107), and `size(sources) = size(sourceRoles) = size(types)` on every edge.
 9. Per-bridge counts (remapped / dropped deprecated / unresolved) reported by the loader and recorded with the snapshot.
 10. *(v1.2)* After `load_kev.py` / `load_epss.py` / `load_ssvc.py`: every decision node has exactly one incoming edge and it is the has_\* edge from the Vulnerability with the same `cveId`; no edge leaves a decision node (`shapes/decision.shacl.ttl` on export, or the Cypher equivalents in the three mapping docs); `count(EpssScore)` never decreases; dropped-and-counted totals per source recorded with the snapshot.
+11. *(v1.2)* After `load_atlas.py`: node and edge counts equal the source profile of the pinned release (2026.09: 16 / 120 / 88 / 40 nodes, 225 ATLAS `PART_OF`, 88 ATLAS `SUBTECHNIQUE_OF`, 361 `MITIGATES`, `ADAPTED_FROM` = 44 − unresolved); zero edges between an ATLAS node and a non-ATLAS node other than outgoing `ADAPTED_FROM`; every `ADAPTED_FROM` carries `sourceField` / `attackReferenceId` / `attackReferenceUrl`; the **label-qualified** ATT&CK `PART_OF` and `SUBTECHNIQUE_OF` counts are unchanged (unqualified counts grow by 225 / 88). Cypher in `atlas-to-owl-v1.0.md`.
 11. *(v1.2)* **Chain equivalence:** every chain export (nodes and edges of `CPE → CVE/CVSS → CWE → CAPEC → ATT&CK → defences`, `CAUSED_BY` with provenance, `BuildMetadata` minus the two new keys) is hash-identical between `kgcs-v11` and `kgcs-v12` on the same raw data (session Q19 gate). The decision extension adds nodes and edges; it must change nothing else.

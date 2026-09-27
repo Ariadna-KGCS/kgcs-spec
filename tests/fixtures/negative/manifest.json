@@ -489,5 +489,240 @@
         "severity": "sh:Violation"
       }
     ]
+  },
+  "atlas-tactic-id-pattern.ttl": {
+    "description": "atlas.shacl AtlasTacticShape: ATT&CK tactic id (TA0043) on an AtlasTactic instead of AML.TA#### (Hard Rule 5)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-ta-bad",
+        "path": "atlas#atlasId",
+        "constraint": "sh:PatternConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-technique-subtechnique-id.ttl": {
+    "description": "atlas.shacl AtlasTechniqueShape: sub-technique id AML.T####.### on an AtlasTechnique",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-neg",
+        "path": "atlas#atlasId",
+        "constraint": "sh:PatternConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-maturity-vocab.ttl": {
+    "description": "atlas.shacl AtlasTechniqueShape: maturity outside Feasible | Demonstrated | Realized",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-neg",
+        "path": "atlas#maturity",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-part-of-attack-tactic.ttl": {
+    "description": "atlas.shacl AtlasTechniqueShape: ATLAS PART_OF to an ATT&CK Tactic (PART_OF is label-scoped)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091",
+        "path": "atlas#part_of",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-technique-to-d3fend.ttl": {
+    "description": "atlas.shacl AtlasTechniqueShape (closed): ATLAS -> D3FEND MITIGATED_BY; ATLAS is not a chain hop (ADR-0004 D3)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091",
+        "path": "core#mitigated_by",
+        "constraint": "sh:ClosedConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "capec-implements-atlas.ttl": {
+    "description": "atlas.shacl AtlasBoundaryShape + SH-CORE-05: CAPEC IMPLEMENTS an AtlasTechnique; no CAPEC -> ATLAS edge (ADR-0004 D3)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091",
+        "path": "core#implemented_as",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:capec-63",
+        "path": "core#implemented_as",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "attack-subtechnique-of-atlas.ttl": {
+    "description": "atlas.shacl AtlasBoundaryShape + attck/core SUBTECHNIQUE_OF shapes: ATT&CK SubTechnique made SUBTECHNIQUE_OF an AtlasTechnique",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091",
+        "path": "core#subtechnique_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:ClassConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:MaxCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:MaxCountConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:t1059-001",
+        "path": "attack#subtechnique_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-subtechnique-without-parent.ttl": {
+    "description": "atlas.shacl AtlasSubTechniqueShape: sub-technique without SUBTECHNIQUE_OF parent (source: exactly one specializes)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-neg",
+        "path": "atlas#subtechnique_of",
+        "constraint": "sh:MinCountConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-subtechnique-prefix-mismatch.ttl": {
+    "description": "atlas.shacl AtlasSubTechniqueShape (SPARQL): parent atlasId is not the sub-technique id prefix",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-neg",
+        "path": "atlas#subtechnique_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-subtechnique-tactic-not-on-parent.ttl": {
+    "description": "atlas.shacl AtlasSubTechniqueTacticSubsetShape (Warning): sub-technique PART_OF a tactic its parent is not",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-t0091-000",
+        "path": "atlas#part_of",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Warning"
+      }
+    ]
+  },
+  "atlas-mitigation-category-vocab.ttl": {
+    "description": "atlas.shacl AtlasMitigationShape: category outside Policy | Technical - AI | Technical - Cyber",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-m-neg",
+        "path": "atlas#categories",
+        "constraint": "sh:InConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-mitigates-attack-technique.ttl": {
+    "description": "atlas.shacl AtlasMitigationShape: ATLAS MITIGATES an ATT&CK Technique (ATLAS mitigations reach ATLAS techniques only)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-m0019",
+        "path": "atlas#mitigates",
+        "constraint": "sh:OrConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-adapted-from-without-provenance.ttl": {
+    "description": "atlas.shacl AdaptedFromProvenanceShape: ADAPTED_FROM edge without attack-reference provenance statement",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:aml-neg",
+        "path": "atlas#adapted_from",
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-adapted-from-to-capec.ttl": {
+    "description": "atlas.shacl AtlasTechniqueShape + AdaptedFromStatementShape: ADAPTED_FROM targeting a CAPEC AttackPattern",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:af-neg",
+        "path": "rdf:object",
+        "constraint": "sh:OrConstraintComponent",
+        "severity": "sh:Violation"
+      },
+      {
+        "focus": "urn:kgcs:fixture:aml-neg",
+        "path": "atlas#adapted_from",
+        "constraint": "sh:OrConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-adapted-from-url-mismatch.ttl": {
+    "description": "atlas.shacl AdaptedFromStatementShape (SPARQL): attackReferenceUrl names another technique than attackReferenceId",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:af-neg",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-adapted-from-statement-without-edge.ttl": {
+    "description": "atlas.shacl AdaptedFromStatementShape (SPARQL): provenance statement for a missing ADAPTED_FROM edge",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:af-neg",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Violation"
+      }
+    ]
+  },
+  "atlas-adapted-from-remapped-target.ttl": {
+    "description": "atlas.shacl AdaptedFromReferenceAgreementShape (Warning): target attackId differs from attack-reference.id (revoked-by remap)",
+    "expected": [
+      {
+        "focus": "urn:kgcs:fixture:af-neg",
+        "path": null,
+        "constraint": "sh:SPARQLConstraintComponent",
+        "severity": "sh:Warning"
+      }
+    ]
   }
 }

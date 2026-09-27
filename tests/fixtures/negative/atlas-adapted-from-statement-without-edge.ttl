@@ -1,0 +1,17 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix kgcs:   <http://www.motherhacker.me/kgcs/ontology/core#> .
+@prefix attack: <http://www.motherhacker.me/kgcs/ontology/attack#> .
+@prefix atlas:  <http://www.motherhacker.me/kgcs/ontology/atlas#> .
+@prefix fx:     <urn:kgcs:fixture:> .
+
+# atlas.shacl AdaptedFromStatementShape (SPARQL): provenance statement for an
+# ADAPTED_FROM edge that is not in the graph.
+
+fx:af-neg a atlas:AdaptedFromStatement ;
+    rdf:subject fx:aml-t0091 ;
+    rdf:predicate atlas:adapted_from ;
+    rdf:object fx:t1059 ;
+    atlas:sourceField "attack-reference" ;
+    atlas:attackReferenceId "T1059" ;
+    atlas:attackReferenceUrl "https://attack.mitre.org/techniques/T1059/" .
